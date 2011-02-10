@@ -42,7 +42,7 @@
  * nothing will happen.
  */
 
-std::string segway_name="segway"; 
+std::string segway_name="segway";
 
 int main(int argc, char *argv[])
 {
@@ -70,7 +70,7 @@ int main(int argc, char *argv[])
       usleep(10000);
       segway->reset_forward_integrator();
       usleep(10000);
-      segway->move(0.1,0.0);
+      segway->move(1.0,0.0);
       for(i=0;i<10;i++)
       {
         sleep(1);

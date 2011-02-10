@@ -1,0 +1,23 @@
+<package>
+  <description brief="iricomms">
+
+     iricomms
+
+  </description>
+  <author>William Woodall</author>
+  <license>BSD</license>
+  <review status="unreviewed" notes=""/>
+  <url>http://ros.org/wiki/iricomms</url>
+  <rosdep name="graphviz"/>
+  <rosdep name="libusb"/>
+  <rosdep name="ftd2xx"/>
+  
+  <depend package="iriutils"/>
+  <export>
+      <cpp cflags="-I${prefix}/communications/include/iriutils" lflags="-L${prefix}/communications/lib/iriutils -Wl,-rpath,${prefix}/communications/lib/iriutils -llibcomm.so"/>
+      <cpp os="osx" cflags="-I${prefix}/communications/include/iriutils" lflags="-L${prefix}/communications/lib/iriutils -Wl,-rpath,${prefix}/communications/lib/iriutils -llibcomm.dylib"/>
+  </export>
+
+</package>
+
+

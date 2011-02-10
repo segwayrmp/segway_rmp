@@ -1,0 +1,85 @@
+#include "segway_rmp200.h"
+#include "ftdiexceptions.h"
+#include "ftdiserver.h"
+#include "ftdimodule.h"
+#include <iostream>
+#include <sstream>
+
+#include "ros/ros.h"
+#include "geometry_msgs/Twist.h"
+
+std::string segway_name="segway";
+CSegwayRMP200 *segway;
+bool has_been_commanded = false;
+
+void cmd_velCallback(const geometry_msgs::Twist::ConstPtr& msg) {
+    // ROS_INFO("Recieved cmd_vel Twist: x: %f, z:%f", msg->linear.x, msg->angular.z);
+    has_been_commanded = true;
+    segway->move(msg->linear.x, msg->angular.z);
+}
+
+void statusCallback(const ros::TimerEvent& e) {
+    std::stringstream ss;
+    ss << std::endl << (*segway);
+    ROS_INFO(ss.str().c_str());
+}
+
+void safetyCallback(const ros::TimerEvent& e) {
+    if(has_been_commanded)
+        has_been_commanded = false;
+    else
+        segway->stop();
+}
+
+int main(int argc, char **argv) {
+    ros::init(argc, argv, "segway_rmp200");
+
+    ros::NodeHandle n;
+
+    ROS_INFO("Setting up Segway Interface.");
+
+    CFTDIServer *ftdi_server=CFTDIServer::instance();
+    std::string serial_number;
+
+    try {
+        ftdi_server->add_custom_PID(0xE729);
+        if(ftdi_server->get_num_devices()>0) {
+            serial_number=ftdi_server->get_serial_number(0);
+            segway=new CSegwayRMP200(segway_name);
+            segway->connect(serial_number);
+            segway->unlock_balance();
+            segway->set_operation_mode(balance);
+            segway->set_gain_schedule(light);
+            segway->reset_right_wheel_integrator();
+            usleep(10000);
+            segway->reset_left_wheel_integrator();
+            usleep(10000);
+            segway->reset_yaw_integrator();
+            usleep(10000);
+            segway->reset_forward_integrator();
+            usleep(10000);
+        }
+    } catch(CException &e) {
+        ROS_ERROR(e.what().c_str());
+        ROS_WARN("It seems like there was an error connecting to the segway, check your connections, permissions, and that the segway powerbase is on.");
+        exit(-1);
+    }
+
+    ros::Subscriber sub = n.subscribe("cmd_vel", 1000, cmd_velCallback);
+
+    ROS_INFO("Segway Ready.");
+
+    // Setup Status Loop
+    ros::Timer status_timer = n.createTimer(ros::Duration(0.5), statusCallback);
+
+    // Setup Safety Loop
+    ros::Timer safety_timer = n.createTimer(ros::Duration(0.5), safetyCallback);
+
+    ros::spin();
+
+    ROS_INFO("Shutting Down Segway Interface.");
+    segway->stop();
+    // segway->close();  // This seems to hang the program on exit, need to look into that...
+
+    return 0;
+}

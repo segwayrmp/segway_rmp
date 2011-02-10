@@ -1,0 +1,19 @@
+<package>
+  <description brief="iriutils">
+
+     iriutils
+
+  </description>
+  <author>William Woodall</author>
+  <license>BSD</license>
+  <review status="unreviewed" notes=""/>
+  <url>http://ros.org/wiki/iriutils</url>
+  <rosdep name="graphviz"/>
+  <export>
+      <cpp cflags="-I${prefix}/utilities/include/iriutils" lflags="-L/usr/local/lib/iridrivers -L${prefix}/utilities/lib/iriutils -Wl,-rpath,${prefix}/utilities/lib/iriutils -llibiriutils.so"/>
+      <cpp os="osx" cflags="-I${prefix}/utilities/include/iriutils" lflags="-L${prefix}/utilities/lib/iriutils -Wl,-rpath,${prefix}/utilities/lib/iriutils -llibiriutils.dylib"/>
+  </export>
+
+</package>
+
+
