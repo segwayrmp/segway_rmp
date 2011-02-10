@@ -1,0 +1,22 @@
+<package>
+  <description brief="iriutils_communications">
+
+     iriutils_communications
+
+  </description>
+  <author>William Woodall</author>
+  <license>BSD</license>
+  <review status="unreviewed" notes=""/>
+  <url>http://ros.org/wiki/iriutils_communications</url>
+  <rosdep name="graphviz"/>
+  <rosdep name="libusb"/>
+  <rosdep name="ftd2xx"/>
+  
+  <depend package="iriutils_utilities"/>
+  <export>
+      <cpp cflags="-I${prefix}/communications/include/iriutils" lflags="-L${prefix}/communications/lib/iriutils -Wl,-rpath,${prefix}/communications/lib/iriutils -llibcomm.dylib"/>
+  </export>
+
+</package>
+
+

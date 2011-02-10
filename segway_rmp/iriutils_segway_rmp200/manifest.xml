@@ -1,0 +1,17 @@
+<package>
+  <description brief="iriutils_segway_rmp200">
+
+     iriutils_segway_rmp200
+
+  </description>
+  <author>William Woodall</author>
+  <license>BSD</license>
+  <review status="unreviewed" notes=""/>
+  <url>http://ros.org/wiki/iriutils_segway_rmp200</url>
+  <export>
+    <cpp cflags="-I${prefix}/segway_rmp200/include/iridrivers" lflags="-L${prefix}/segway_rmp200/lib/iridrivers -Wl,-rpath,${prefix}/segway_rmp200/lib/iridrivers -llibsegway_RMP200.dylib"/>
+  </export>
+
+</package>
+
+

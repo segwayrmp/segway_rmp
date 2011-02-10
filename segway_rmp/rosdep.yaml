@@ -1,0 +1,4 @@
+libusb:
+    macports: libusb
+ftd2xx:
+    macports: libftd2xx
