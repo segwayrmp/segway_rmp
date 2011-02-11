@@ -12,6 +12,7 @@ std::string segway_name="segway";
 CSegwayRMP200 *segway;
 bool has_been_commanded = false;
 int segway_motor_timeout = 0.5;
+bool has_been_stopped = false;
 
 void cmd_velCallback(const geometry_msgs::Twist::ConstPtr& msg) {
     has_been_commanded = true;
@@ -20,11 +21,13 @@ void cmd_velCallback(const geometry_msgs::Twist::ConstPtr& msg) {
 }
 
 void statusCallback(const ros::TimerEvent& e) {
+    count++;
     std::stringstream ss;
-    ss << std::endl << (*segway);
+    ss << count << std::endl << (*segway);
     ROS_INFO(ss.str().c_str());
 }
 
+<<<<<<< Updated upstream
 void motor_timeoutCallback(const ros::TimerEvent& e) {
     if(has_been_commanded) { // If it has been commanded, note that it has been checked but not stopped
         has_been_commanded = false;
