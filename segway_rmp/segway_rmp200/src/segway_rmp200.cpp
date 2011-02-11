@@ -11,11 +11,12 @@
 std::string segway_name="segway";
 CSegwayRMP200 *segway;
 bool has_been_commanded = false;
+int segway_motor_timeout = 0.5;
 
 void cmd_velCallback(const geometry_msgs::Twist::ConstPtr& msg) {
-    // ROS_INFO("Recieved cmd_vel Twist: x: %f, z:%f", msg->linear.x, msg->angular.z);
     has_been_commanded = true;
     segway->move(msg->linear.x, msg->angular.z);
+    n.createTimer(ros::Duration(segway_motor_timeout), motor_timeoutCallback, true);
 }
 
 void statusCallback(const ros::TimerEvent& e) {
@@ -24,11 +25,14 @@ void statusCallback(const ros::TimerEvent& e) {
     ROS_INFO(ss.str().c_str());
 }
 
-void safetyCallback(const ros::TimerEvent& e) {
-    if(has_been_commanded)
+void motor_timeoutCallback(const ros::TimerEvent& e) {
+    if(has_been_commanded) {
         has_been_commanded = false;
-    else
+        has_been_stopped = false;
+    } else if(!has_been_stopped) {
+        ROS_WARN("Motor timeout reached, stopping segway.");
         segway->stop();
+    }
 }
 
 int main(int argc, char **argv) {
@@ -70,10 +74,12 @@ int main(int argc, char **argv) {
     ROS_INFO("Segway Ready.");
 
     // Setup Status Loop
-    ros::Timer status_timer = n.createTimer(ros::Duration(0.5), statusCallback);
+    int segway_status_rate;
+    n.param("segway_status_rate", segway_status_rate, 2);
+    ros::Timer status_timer = n.createTimer(ros::Duration(1.0/segway_status_rate), statusCallback);
 
-    // Setup Safety Loop
-    ros::Timer safety_timer = n.createTimer(ros::Duration(0.5), safetyCallback);
+    // Setup Motor Timeout
+    n.param("segway_motor_timeout", segway_motor_timeout, 0.5);
 
     ros::spin();
 
