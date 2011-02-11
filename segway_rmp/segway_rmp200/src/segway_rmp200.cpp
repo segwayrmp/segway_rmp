@@ -26,11 +26,12 @@ void statusCallback(const ros::TimerEvent& e) {
 }
 
 void motor_timeoutCallback(const ros::TimerEvent& e) {
-    if(has_been_commanded) {
+    if(has_been_commanded) { // If it has been commanded, note that it has been checked but not stopped
         has_been_commanded = false;
         has_been_stopped = false;
-    } else if(!has_been_stopped) {
+    } else if(!has_been_stopped) { // If it hasn't been commanded since and it hasn't been stopped yet, stop it
         ROS_WARN("Motor timeout reached, stopping segway.");
+        has_ben_stopped = true;
         segway->stop();
     }
 }
