@@ -1,0 +1,5 @@
+<launch>
+    <node name="segway_rmp200" pkg="segway_rmp200" type="segway_rmp200" output="screen" />
+    <node name="joy_node" pkg="joy" type="joy_node" output="screen" />
+    <node name="joy2twist" pkg="joy2twist" type="joy2twist.py" output="screen" />
+</launch>
