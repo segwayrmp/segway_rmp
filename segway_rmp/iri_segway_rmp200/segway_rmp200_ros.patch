@@ -1,3 +1,16 @@
+Index: src/segway_rmp200.cpp
+===================================================================
+--- src/segway_rmp200.cpp	(revision 26)
++++ src/segway_rmp200.cpp	(working copy)
+@@ -199,7 +199,7 @@
+                    this->right_wheel_displ=((float)((int)(((int)packet->data[15]<<24)+((int)packet->data[16]<<16)+((int)packet->data[13]<<8)+(int)packet->data[14])))/33125.0;
+                    break;
+       case 0x0404: this->forward_displ=((float)((int)(((int)packet->data[11]<<24)+((int)packet->data[12]<<16)+((int)packet->data[9]<<8)+(int)packet->data[10])))/33125.0;;
+-                   this->yaw_displ=((float)((int)(((int)packet->data[15]<<24)+((int)packet->data[16]<<16)+((int)packet->data[13]<<8)+(int)packet->data[14])))/33125.0;
++                   this->yaw_displ=((float)((int)(((int)packet->data[15]<<24)+((int)packet->data[16]<<16)+((int)packet->data[13]<<8)+(int)packet->data[14])))/112644.0;
+                    break;
+       case 0x0405: this->left_torque=((float)((short int)(((int)packet->data[9]<<8)+(int)packet->data[10])))/1094.0;
+                    this->right_torque=((float)((short int)(((int)packet->data[11]<<8)+(int)packet->data[12])))/1094.0;
 Index: src/CMakeLists.txt
 ===================================================================
 --- src/CMakeLists.txt	(revision 26)
