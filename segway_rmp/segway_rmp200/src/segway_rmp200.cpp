@@ -4,19 +4,105 @@
 #include "ftdimodule.h"
 #include <iostream>
 #include <sstream>
+#include <math.h>
 
 #include "ros/ros.h"
 #include "geometry_msgs/Twist.h"
+#include "nav_msgs/Odometry.h"
 #include "segway_rmp200/SegwayStatus.h"
 
+#define pi 3.14159265
+
+// Segway Interface Variables
 std::string segway_name="segway";
 CSegwayRMP200 *segway;
+
+// Persistent Odometry Variables
+bool first_odometry = true;
+float last_forward_displacement = 0, last_yaw_displacement = 0;
+float odometry_x = 0.0, odometry_y = 0.0, odometry_w = 0.0;
+ros::Time last_time;
+
+// Synchonization Flags
 bool has_been_commanded = false;
 double segway_motor_timeout = 0.5;
 bool has_been_stopped = false;
+
+// ROS variables
 ros::NodeHandle *n;
 std::string frame_id = "base_link";
 ros::Publisher segway_status_pub;
+ros::Publisher odom_pub;
+tf::TransformBroadcaster odom_broadcaster;
+
+void odometryCallback(const ros::TimeEvent& e) {
+    // Grab the time
+    ros::Time current_time = ros::Time::now();
+    
+    // Grab the newest Segway data
+    float forward_displacement = segway->get_forward_displacement(); // Meters
+    float yaw_displacement = segway->get_yaw_displacement()*2*pi; // Radians
+    float left_wheel_velocity = segway->get_left_wheel_velocity(); // Meters/s
+    float left_right_velocity = segway->get_right_wheel_velocity(); // Meters/s
+    float yaw_rate = segway->get_yaw_rate()*(pi/180.0); // radians/s
+    
+    // Integrate the displacements over time
+    // If not the first odometry calculate the delta in displacements
+    float vel_x = 0.0;
+    float vel_y = 0.0;
+    if(!first_odometry) {
+        float delta_forward_displacement = forward_displacement - last_forward_displacement;
+        float delta_yaw_displacement = yaw_displacement - last_yaw_displacement;
+        double delta_time = (current_time-last_time).toSec();
+        // Update accumulated odometries and calculate the x and y components of velocity
+        odometry_w += delta_yaw_displacement;
+        float new_odometry_x = delta_forward_displacement * std::cos(delta_yaw_displacement);
+        vel_x = (new_odometry_x - odometry_x)/delta_time;
+        odometry_x += new_odometry_x;
+        float new_odometry_y = delta_forward_displacement * std::sin(delta_yaw_displacement);
+        vel_y = (new_odometry_y - odometry_y)/delta_time;
+        odometry_y += new_odometry_y;
+    } else {
+        first_odometry = false;
+    }
+    // No matter what update the previouse (last) displacements
+    last_forward_displacement = forward_displacement;
+    last_yaw_displacement = yaw_displacement;
+    last_time = current_time;
+    
+    // Create a Quaternion from the yaw displacement
+    geometry_msgs::Quaternion quat = tf::createQuaternionMsgFromYaw(yaw_displacement);
+    
+    // Publish the Transform odom->base_link
+    geometry_msgs::TransformStamped odom_trans;
+    odom_trans.header.stamp = current_time;
+    odom_trans.header.frame_id = "odom";
+    odom_trans.child_frame_id = frame_id;
+
+    odom_trans.transform.translation.x = odometry_x;
+    odom_trans.transform.translation.y = odometry_y;
+    odom_trans.transform.translation.z = 0.0;
+    odom_trans.transform.rotation = quat;
+
+    //send the transform
+    odom_broadcaster.sendTransform(odom_trans);
+    
+    // Publish Odometry
+    nav_msgs::Odometry msg;
+    msg.header.stamp = current_time;
+    msg.header.frame_id = "odom";
+    msg.pose.pose.position.x = odometry_x;
+    msg.pose.pose.position.y = odometry_y;
+    msg.pose.pose.position.z = 0.0;
+    msg.pose.rotation = quat;
+    
+    msg.child_frame_id = frame_id;
+    msg.twist.twist.linear.x = vel_x;
+    msg.twist.twist.linear.y = vel_y;
+    msg.twist.twist.angular.z = yaw_rate;
+    
+    odom_pub.publish(msg);
+}
 
 void statusCallback(const ros::TimerEvent& e) {
     segway_rmp200::SegwayStatus msg;
@@ -24,7 +110,6 @@ void statusCallback(const ros::TimerEvent& e) {
     msg.header.stamp = ros::Time::now();
     msg.header.frame_id = frame_id;
     
-    // Grab mutex for the status data
     msg.pitch_angle = segway->get_pitch_angle();
     msg.pitch_rate = segway->get_pitch_rate();
     msg.roll_angle = segway->get_roll_angle();
@@ -107,6 +192,11 @@ int main(int argc, char **argv) {
     n->param("segway_status_rate", segway_status_rate, 2);
     ros::Timer status_timer = n->createTimer(ros::Duration(1.0/segway_status_rate), statusCallback);
 
+    // Setup Odometry Loop
+    int segway_odom_rate;
+    n->param("segway_odom_rate", segway_odom_rate, 30);
+    ros::Timer odom_timer = n->createTimer(ros::Duration(1.0/segway_odom_rate), odomCallback);
+
     // Setup Motor Timeout
     n->param("segway_motor_timeout", segway_motor_timeout, 0.5);
     
@@ -115,6 +205,9 @@ int main(int argc, char **argv) {
     
     // Setup the Segway Status Publisher
     segway_status_pub = n->advertise<segway_rmp200::SegwayStatus>("segway_status", 1000);
+    
+    // Setup the Odometry Publisher
+    odom_pub = n->advertise<nav_msgs::Odometry>("odom", 50);
 
     ros::spin();
 
