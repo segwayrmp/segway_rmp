@@ -3,6 +3,7 @@ INSTALL_DIR = utilities
 all: installed
 
 SVN_DIR = build/utilities-svn
+SVN_REVISION = -r 73
 SVN_URL = https://haydn.upc.es/labrobotica/pub/applications/utilities
 SVN_PATCH =	 iriutils_ros.patch
 include $(shell rospack find mk)/svn_checkout.mk

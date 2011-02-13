@@ -7,12 +7,15 @@
 
 #include "ros/ros.h"
 #include "geometry_msgs/Twist.h"
+#include "segway_rmp200/SegwayStatus.h"
 
 std::string segway_name="segway";
 CSegwayRMP200 *segway;
 bool has_been_commanded = false;
 int segway_motor_timeout = 0.5;
 bool has_been_stopped = false;
+std::string frame_id = "base_link";
+ros::Publisher segway_status_pub;
 
 void cmd_velCallback(const geometry_msgs::Twist::ConstPtr& msg) {
     has_been_commanded = true;
@@ -21,13 +24,36 @@ void cmd_velCallback(const geometry_msgs::Twist::ConstPtr& msg) {
 }
 
 void statusCallback(const ros::TimerEvent& e) {
-    count++;
-    std::stringstream ss;
-    ss << count << std::endl << (*segway);
-    ROS_INFO(ss.str().c_str());
+    segway_rmp200::SegwayStatus msg;
+    
+    msg.header.time = ros::Time::now();
+    msg.header.frame_id = frame_id;
+    
+    // Grab mutex for the status data
+    segway.access_status.enter();
+    msg.pitch_angle = segway.pitch_angle;
+    msg.pitch_rate = segway.pitch_rate;
+    msg.roll_angle = segway.roll_angle;
+    msg.roll_rate = segway.roll_rate;
+    msg.left_wheel_velocity = segway.left_wheel_velocity;
+    msg.right_wheel_velocity = segway.right_wheel_velocity;
+    msg.yaw_rate = segway.yaw_rate;
+    msg.servo_frames = segway.servo_frames;
+    msg.left_wheel_displacement = segway.left_wheel_displ;
+    msg.right_wheel_displacement = segway.right_wheel_displ;
+    msg.forward_displacement = segway.forward_displ;
+    msg.yaw_displacement = segway.yaw_displ;
+    msg.left_motor_torque = segway.left_torque;
+    msg.right_motor_torque = segway.right_torque;
+    msg.operation_mode = segway.mode;
+    msg.gain_schedule = segway.gain_schedule;
+    msg.ui_battery = segway.ui_battery;
+    msg.powerbase_battery = segway.powerbase_battery;
+    segway.access_status.exit();
+    
+    segway_status_pub.publish(msg);
 }
 
-<<<<<<< Updated upstream
 void motor_timeoutCallback(const ros::TimerEvent& e) {
     if(has_been_commanded) { // If it has been commanded, note that it has been checked but not stopped
         has_been_commanded = false;
@@ -84,6 +110,12 @@ int main(int argc, char **argv) {
 
     // Setup Motor Timeout
     n.param("segway_motor_timeout", segway_motor_timeout, 0.5);
+    
+    // Get frame id parameter
+    n.param("frame_id", frame_id, "base_link");
+    
+    // Setup the Segway Status Publisher
+    segway_status_pub = n.advertise<std_msgs::String>("segway_status", 1000);
 
     ros::spin();
 
