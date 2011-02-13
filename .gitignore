@@ -17,3 +17,8 @@ build
 bin
 cpp
 */lib/*
+installed
+patched
+wiped
+msg_gen
+srv_gen

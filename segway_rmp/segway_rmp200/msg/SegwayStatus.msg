@@ -19,7 +19,7 @@ float32 roll_rate                   # degrees/s
 float32 left_wheel_velocity         # meters/s
 float32 right_wheel_velocity        # meters/s
 float32 yaw_rate                    # degrees/s
-float32 servo_frame                 # frames/second
+float32 servo_frames                # frames/second
 float32 left_wheel_displacement     # meters
 float32 right_wheel_displacement    # meters
 float32 forward_displacement        # meters
