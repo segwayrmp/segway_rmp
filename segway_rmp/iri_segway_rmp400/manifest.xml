@@ -1,0 +1,22 @@
+<package>
+    <description brief="iri_segway_rmp400">
+
+        iri_segway_rmp400
+
+    </description>
+    <author>William Woodall</author>
+    <license>BSD</license>
+    <review status="unreviewed" notes=""/>
+    <url>http://ros.org/wiki/iri_segway_rmp400</url>
+    <depend package="iri_segway_rmp200"/>
+    <depend package="iricomms"/>
+    <depend package="iriutils"/>
+
+    <export>
+        <cpp cflags="-I${prefix}/include/iridrivers" lflags="-L${prefix}/lib/iridrivers -Wl,-rpath,${prefix}/lib/iridrivers -llibsegway_rmp_400.so"/>
+        <cpp os="osx" cflags="-I${prefix}/include/iridrivers" lflags="-L${prefix}/lib/iridrivers -Wl,-rpath,${prefix}/lib/iridrivers -llibsegway_rmp_400.dylib"/>
+    </export>
+
+</package>
+
+

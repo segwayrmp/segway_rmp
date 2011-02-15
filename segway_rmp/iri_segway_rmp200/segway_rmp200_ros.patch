@@ -1,40 +1,44 @@
-Index: src/segway_rmp200.cpp
-===================================================================
---- src/segway_rmp200.cpp	(revision 26)
-+++ src/segway_rmp200.cpp	(working copy)
-@@ -199,7 +199,7 @@
-                    this->right_wheel_displ=((float)((int)(((int)packet->data[15]<<24)+((int)packet->data[16]<<16)+((int)packet->data[13]<<8)+(int)packet->data[14])))/33125.0;
-                    break;
-       case 0x0404: this->forward_displ=((float)((int)(((int)packet->data[11]<<24)+((int)packet->data[12]<<16)+((int)packet->data[9]<<8)+(int)packet->data[10])))/33125.0;;
--                   this->yaw_displ=((float)((int)(((int)packet->data[15]<<24)+((int)packet->data[16]<<16)+((int)packet->data[13]<<8)+(int)packet->data[14])))/33125.0;
-+                   this->yaw_displ=((float)((int)(((int)packet->data[15]<<24)+((int)packet->data[16]<<16)+((int)packet->data[13]<<8)+(int)packet->data[14])))/112644.0;
-                    break;
-       case 0x0405: this->left_torque=((float)((short int)(((int)packet->data[9]<<8)+(int)packet->data[10])))/1094.0;
-                    this->right_torque=((float)((short int)(((int)packet->data[11]<<8)+(int)packet->data[12])))/1094.0;
 Index: src/CMakeLists.txt
 ===================================================================
---- src/CMakeLists.txt	(revision 26)
+--- src/CMakeLists.txt	(revision 33)
 +++ src/CMakeLists.txt	(working copy)
-@@ -23,6 +23,6 @@
+@@ -4,8 +4,12 @@
+ SET(headers segway_rmp200.h segway_rmp200_exceptions.h)
+ 
+ # edit the following line to find the necessary packages
+-FIND_PACKAGE(iriutils)
+-FIND_PACKAGE(comm)
++IF(NOT DEFINED iriutils_FOUND OR NOT DEFINED iriutils_INCLUDE_DIR OR NOT DEFINED iriutils_LIBRARY)
++    FIND_PACKAGE(iriutils)
++ENDIF(NOT DEFINED iriutils_FOUND OR NOT DEFINED iriutils_INCLUDE_DIR OR NOT DEFINED iriutils_LIBRARY)
++IF(NOT DEFINED comm_FOUND OR NOT DEFINED comm_INCLUDE_DIR OR NOT DEFINED comm_LIBRARY)
++    FIND_PACKAGE(comm)
++ENDIF(NOT DEFINED comm_FOUND OR NOT DEFINED comm_INCLUDE_DIR OR NOT DEFINED comm_LIBRARY)
+ 
+ # edit the following line to add the necessary include directories
+ INCLUDE_DIRECTORIES(.)
+@@ -34,6 +38,6 @@
  
  INSTALL(FILES ${headers} DESTINATION include/iridrivers)
  
--INSTALL(FILES ../Findsegway_rmp200.cmake DESTINATION ${CMAKE_ROOT}/Modules/)
-+INSTALL(FILES ../Findsegway_rmp200.cmake DESTINATION ${CMAKE_INSTALL_PREFIX}/Modules/)
+-INSTALL(FILES ../Findsegway_rmp_200.cmake DESTINATION ${CMAKE_ROOT}/Modules/)
++INSTALL(FILES ../Findsegway_rmp_200.cmake DESTINATION ${CMAKE_INSTALL_PREFIX}/Modules/)
  	
  ADD_SUBDIRECTORY(examples)
 Index: CMakeLists.txt
 ===================================================================
---- CMakeLists.txt	(revision 26)
+--- CMakeLists.txt	(revision 33)
 +++ CMakeLists.txt	(working copy)
-@@ -12,7 +12,9 @@
+@@ -12,8 +12,11 @@
  
  SET(EXECUTABLE_OUTPUT_PATH ${CMAKE_CURRENT_SOURCE_DIR}/bin)
  SET(LIBRARY_OUTPUT_PATH ${CMAKE_CURRENT_SOURCE_DIR}/lib)
 -SET(CMAKE_INSTALL_PREFIX /usr/local)
-+IF(NOT DEFINED CMAKE_INSTALL_PREFIX)
-+    SET(CMAKE_INSTALL_PREFIX /usr/local)
-+ENDIF(NOT DEFINED CMAKE_INSTALL_PREFIX)
  
++IF(NOT CMAKE_INSTALL_PREFIX)
++  SET(CMAKE_INSTALL_PREFIX /usr/local)
++ENDIF(NOT CMAKE_INSTALL_PREFIX)
++
  IF (NOT CMAKE_BUILD_TYPE)
   SET(CMAKE_BUILD_TYPE "DEBUG") 
+ ENDIF (NOT CMAKE_BUILD_TYPE)

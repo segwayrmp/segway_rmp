@@ -1,28 +1,3 @@
-Index: Findiriutils.cmake
-===================================================================
---- Findiriutils.cmake	(revision 73)
-+++ Findiriutils.cmake	(working copy)
-@@ -1,20 +0,0 @@
--FIND_PATH(iriutils_INCLUDE_DIR exceptions.h mutex.h mutexexceptions.h event.h eventserver.h eventexceptions.h thread.h threadserver.h threadexceptions.h comm.h commexceptions.h log.h logexceptions.h /usr/include/iriutils /usr/local/include/iriutils)
--
--FIND_LIBRARY(iriutils_LIBRARY
--    NAMES iriutils
--    PATHS /usr/lib /usr/local/lib /usr/local/lib/iriutils) 
--
--IF (iriutils_INCLUDE_DIR AND iriutils_LIBRARY)
--   SET(iriutils_FOUND TRUE)
--ENDIF (iriutils_INCLUDE_DIR AND iriutils_LIBRARY)
--
--IF (iriutils_FOUND)
--   IF (NOT iriutils_FIND_QUIETLY)
--      MESSAGE(STATUS "Found iriutils: ${iriutils_LIBRARY}")
--   ENDIF (NOT iriutils_FIND_QUIETLY)
--ELSE (iriutils_FOUND)
--   IF (iriutils_FIND_REQUIRED)
--      MESSAGE(FATAL_ERROR "Could not find iriutils")
--   ENDIF (iriutils_FIND_REQUIRED)
--ENDIF (iriutils_FOUND)
--
 Index: src/CMakeLists.txt
 ===================================================================
 --- src/CMakeLists.txt	(revision 73)

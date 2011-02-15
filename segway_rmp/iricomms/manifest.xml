@@ -1,22 +1,21 @@
 <package>
-  <description brief="iricomms">
+    <description brief="iricomms">
 
-     iricomms
+        iricomms
 
-  </description>
-  <author>William Woodall</author>
-  <license>BSD</license>
-  <review status="unreviewed" notes=""/>
-  <url>http://ros.org/wiki/iricomms</url>
-  <rosdep name="graphviz"/>
-  <rosdep name="libusb"/>
-  <rosdep name="ftd2xx"/>
-  
-  <depend package="iriutils"/>
-  <export>
-      <cpp cflags="-I${prefix}/communications/include/iriutils" lflags="-L${prefix}/communications/lib/iriutils -Wl,-rpath,${prefix}/communications/lib/iriutils -llibcomm.so"/>
-      <cpp os="osx" cflags="-I${prefix}/communications/include/iriutils" lflags="-L${prefix}/communications/lib/iriutils -Wl,-rpath,${prefix}/communications/lib/iriutils -llibcomm.dylib"/>
-  </export>
+    </description>
+    <author>William Woodall</author>
+    <license>BSD</license>
+    <review status="unreviewed" notes=""/>
+    <url>http://ros.org/wiki/iricomms</url>
+    <rosdep name="graphviz"/>
+    <rosdep name="libusb"/>
+    <rosdep name="ftd2xx"/>
+    
+    <export>
+        <cpp cflags="-I${prefix}/include/iridrivers" lflags="-L${prefix}/lib/iridrivers -Wl,-rpath,${prefix}/lib/iridrivers -llibcomm.so"/>
+        <cpp os="osx" cflags="-I${prefix}/include/iridrivers" lflags="-L${prefix}/lib/iridrivers -Wl,-rpath,${prefix}/lib/iridrivers -llibcomm.dylib"/>
+    </export>
 
 </package>
 

@@ -1,10 +1,21 @@
 Index: src/CMakeLists.txt
 ===================================================================
---- src/CMakeLists.txt	(revision 42)
+--- src/CMakeLists.txt	(revision 54)
 +++ src/CMakeLists.txt	(working copy)
-@@ -69,6 +69,6 @@
+@@ -23,7 +23,9 @@
+ INCLUDE_DIRECTORIES(.)
  
- INSTALL(FILES ${headers} DESTINATION include/iriutils)
+ # edit the following line to find the necessary packages
+-FIND_PACKAGE(iriutils)
++IF(NOT DEFINED iriutils_FOUND OR NOT DEFINED iriutils_INCLUDE_DIR OR NOT DEFINED iriutils_LIBRARY)
++    FIND_PACKAGE(iriutils)
++ENDIF(NOT DEFINED iriutils_FOUND OR NOT DEFINED iriutils_INCLUDE_DIR OR NOT DEFINED iriutils_LIBRARY)
+ 
+ IF(iriutils_FOUND)
+   INCLUDE_DIRECTORIES(${iriutils_INCLUDE_DIR})
+@@ -56,6 +58,6 @@
+ 
+ INSTALL(FILES ${headers} DESTINATION include/iridrivers)
  
 -INSTALL(FILES ../Findcomm.cmake DESTINATION ${CMAKE_ROOT}/Modules/)
 +INSTALL(FILES ../Findcomm.cmake DESTINATION ${CMAKE_INSTALL_PREFIX}/Modules/)
@@ -12,7 +23,7 @@ Index: src/CMakeLists.txt
  ADD_SUBDIRECTORY(examples)
 Index: CMakeLists.txt
 ===================================================================
---- CMakeLists.txt	(revision 42)
+--- CMakeLists.txt	(revision 54)
 +++ CMakeLists.txt	(working copy)
 @@ -11,7 +11,9 @@
  

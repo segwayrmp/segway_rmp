@@ -1,17 +1,20 @@
 <package>
-  <description brief="iri_segway_rmp200">
+    <description brief="iri_segway_rmp200">
 
-     iri_segway_rmp200
+        iri_segway_rmp200
 
-  </description>
-  <author>William Woodall</author>
-  <license>BSD</license>
-  <review status="unreviewed" notes=""/>
-  <url>http://ros.org/wiki/iri_segway_rmp200</url>
-  <export>
-    <cpp cflags="-I${prefix}/segway_rmp200/include/iridrivers" lflags="-L${prefix}/segway_rmp200/lib/iridrivers -Wl,-rpath,${prefix}/segway_rmp200/lib/iridrivers -llibsegway_RMP200.so"/>
-    <cpp os="osx" cflags="-I${prefix}/segway_rmp200/include/iridrivers" lflags="-L${prefix}/segway_rmp200/lib/iridrivers -Wl,-rpath,${prefix}/segway_rmp200/lib/iridrivers -llibsegway_RMP200.dylib"/>
-  </export>
+    </description>
+    <author>William Woodall</author>
+    <license>BSD</license>
+    <review status="unreviewed" notes=""/>
+    <url>http://ros.org/wiki/iri_segway_rmp200</url>
+    <depend package="iricomms"/>
+    <depend package="iriutils"/>
+
+    <export>
+        <cpp cflags="-I${prefix}/include/iridrivers" lflags="-L${prefix}/lib/iridrivers -Wl,-rpath,${prefix}/lib/iridrivers -llibsegway_rmp_200.so"/>
+        <cpp os="osx" cflags="-I${prefix}/include/iridrivers" lflags="-L${prefix}/lib/iridrivers -Wl,-rpath,${prefix}/lib/iridrivers -llibsegway_rmp_200.dylib"/>
+    </export>
 
 </package>
 

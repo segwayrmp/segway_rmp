@@ -1,0 +1,65 @@
+Index: src/segway_RMP400.cpp
+===================================================================
+--- src/segway_RMP400.cpp	(revision 17)
++++ src/segway_RMP400.cpp	(working copy)
+@@ -1,6 +1,6 @@
+ #include "segway_RMP400.h"
+ #include "segway_RMP400_exception.h"
+-#include <iridrivers/segway_rmp200_exceptions.h>
++#include <segway_rmp200_exceptions.h>
+ 
+ CSegwayRMP400::CSegwayRMP400()
+ {
+Index: src/CMakeLists.txt
+===================================================================
+--- src/CMakeLists.txt	(revision 17)
++++ src/CMakeLists.txt	(working copy)
+@@ -4,9 +4,15 @@
+ SET(headers segway_RMP400.h segway_RMP400_exception.h)
+ 
+ # edit the following line to find the necessary packages
+-FIND_PACKAGE(iriutils)
+-FIND_PACKAGE(comm)
+-FIND_PACKAGE(segway_rmp_200)
++IF(NOT DEFINED iriutils_FOUND OR NOT DEFINED iriutils_INCLUDE_DIR OR NOT DEFINED iriutils_LIBRARY)
++    FIND_PACKAGE(iriutils)
++ENDIF(NOT DEFINED iriutils_FOUND OR NOT DEFINED iriutils_INCLUDE_DIR OR NOT DEFINED iriutils_LIBRARY)
++IF(NOT DEFINED comm_FOUND OR NOT DEFINED comm_INCLUDE_DIR OR NOT DEFINED comm_LIBRARY)
++    FIND_PACKAGE(comm)
++ENDIF(NOT DEFINED comm_FOUND OR NOT DEFINED comm_INCLUDE_DIR OR NOT DEFINED comm_LIBRARY)
++IF(NOT DEFINED segway_rmp_200_FOUND OR NOT DEFINED segway_rmp_200_INCLUDE_DIR OR NOT DEFINED segway_rmp_200_LIBRARY)
++    FIND_PACKAGE(segway_rmp_200)
++ENDIF(NOT DEFINED segway_rmp_200_FOUND OR NOT DEFINED segway_rmp_200_INCLUDE_DIR OR NOT DEFINED segway_rmp_200_LIBRARY)
+ 
+ # edit the following line to add the necessary include directories
+ INCLUDE_DIRECTORIES(.)
+@@ -17,7 +23,7 @@
+   INCLUDE_DIRECTORIES(${comm_INCLUDE_DIR})
+ ENDIF(comm_FOUND)
+ IF(segway_rmp_200_FOUND)
+-  INCLUDE_DIRECTORIES(${segway_RMP200_INCLUDE_DIR})
++  INCLUDE_DIRECTORIES(${segway_rmp_200_INCLUDE_DIR})
+ ENDIF(segway_rmp_200_FOUND)
+ 
+ ADD_LIBRARY(segway_rmp_400 SHARED ${sources})
+@@ -41,4 +47,4 @@
+ 
+ INSTALL(FILES ${headers} DESTINATION include/iridrivers)
+ 
+-INSTALL(FILES ../Findsegway_rmp_400.cmake DESTINATION ${CMAKE_ROOT}/Modules/)
++INSTALL(FILES ../Findsegway_rmp_400.cmake DESTINATION ${CMAKE_INSTALL_PREFIX}/Modules/)
+Index: CMakeLists.txt
+===================================================================
+--- CMakeLists.txt	(revision 17)
++++ CMakeLists.txt	(working copy)
+@@ -11,7 +11,9 @@
+ 
+ SET(EXECUTABLE_OUTPUT_PATH ${CMAKE_CURRENT_SOURCE_DIR}/bin)
+ SET(LIBRARY_OUTPUT_PATH ${CMAKE_CURRENT_SOURCE_DIR}/lib)
+-SET(CMAKE_INSTALL_PREFIX /usr/local)
++IF(NOT DEFINED CMAKE_INSTALL_PREFIX)
++    SET(CMAKE_INSTALL_PREFIX /usr/local)
++ENDIF(NOT DEFINED CMAKE_INSTALL_PREFIX)
+ 
+ IF (NOT CMAKE_BUILD_TYPE)
+  SET(CMAKE_BUILD_TYPE "DEBUG") 
