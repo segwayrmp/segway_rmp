@@ -1,0 +1,16 @@
+<package>
+  <description brief="segway_rmp200_demos">
+
+     segway_rmp200_demos
+
+  </description>
+  <author>William Woodall</author>
+  <license>BSD</license>
+  <review status="unreviewed" notes=""/>
+  <url>http://ros.org/wiki/segway_rmp200_demos</url>
+  <depend package="segway_rmp200"/>
+  <depend package="joy2twist"/>
+
+</package>
+
+
