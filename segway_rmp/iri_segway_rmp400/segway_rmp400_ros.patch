@@ -10,6 +10,41 @@ Index: src/segway_RMP400.cpp
  
  CSegwayRMP400::CSegwayRMP400()
  {
+@@ -24,6 +24,15 @@
+     }
+ }
+ 
++CSegwayRMP200 *
++CSegwayRMP400::get_segway(int index) {
++    if(index == 1 || index == 0)
++        return segways_[index];
++    else
++        throw CSegwayRMP400Exception(_HERE_, "Invalid call to get_segway, index must be 0 or 1.");
++    return -1;
++}
++
+ void
+ CSegwayRMP400::init_ftdi_server()
+ {
+Index: src/segway_RMP400.h
+===================================================================
+--- src/segway_RMP400.h	(revision 17)
++++ src/segway_RMP400.h	(working copy)
+@@ -36,6 +36,14 @@
+     CSegwayRMP400(const std::string serial1, const std::string serial2);
+ 
+     ~CSegwayRMP400();
++    
++    /**
++    * \brief function to get access to individual segways
++    *
++    * Returns a pointer to the CSegwayRMP200 object for the
++    * powerbase at the given index. (0-1)
++    */
++    CSegwayRMP200 * get_segway(int index);
+ 
+     /**
+     * \brief function to set the operation mode
 Index: src/CMakeLists.txt
 ===================================================================
 --- src/CMakeLists.txt	(revision 17)
