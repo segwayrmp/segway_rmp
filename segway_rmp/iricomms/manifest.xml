@@ -11,6 +11,7 @@
     <rosdep name="graphviz"/>
     <rosdep name="libusb"/>
     <rosdep name="ftd2xx"/>
+    <depend package="iriutils"/>
     
     <export>
         <cpp cflags="-I${prefix}/include/iridrivers" lflags="-L${prefix}/lib/iridrivers -Wl,-rpath,${prefix}/lib/iridrivers -llibcomm.so"/>
