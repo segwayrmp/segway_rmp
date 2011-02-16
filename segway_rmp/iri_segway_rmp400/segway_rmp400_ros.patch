@@ -20,7 +20,6 @@ Index: src/segway_RMP400.cpp
 +        return segways_[index];
 +    else
 +        throw CSegwayRMP400Exception(_HERE_, "Invalid call to get_segway, index must be 0 or 1.");
-+    return -1;
 +}
 +
  void
