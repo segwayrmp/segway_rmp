@@ -1,7 +1,7 @@
 <package>
     <description brief="iri_segway_rmp200">
 
-        iri_segway_rmp200
+        This is the IRI's Segway RMP200 Library which is brought in and compiled under ROS from an external SVN repository.  While this package is maintained by William Woodall and licensed BSD, the library it downloads and builds from http://wikiri.upc.es/index.php/Segway_RMP_200_driver is licensed LGPL.
 
     </description>
     <author>William Woodall</author>

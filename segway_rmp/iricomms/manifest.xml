@@ -1,7 +1,7 @@
 <package>
     <description brief="iricomms">
 
-        iricomms
+        This is IRI's Communication library which is brought in and compiled in ROS from an external SVN Repository. While this package is maintained by William Woodall and licensed BSD, the library it downloads and builds from http://wikiri.upc.es/index.php/Communications_library is licensed LGPL.
 
     </description>
     <author>William Woodall</author>
