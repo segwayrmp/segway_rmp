@@ -10,7 +10,7 @@ Index: src/segway_RMP400.cpp
  
  CSegwayRMP400::CSegwayRMP400()
  {
-@@ -24,6 +24,15 @@
+@@ -24,6 +24,14 @@
      }
  }
  
