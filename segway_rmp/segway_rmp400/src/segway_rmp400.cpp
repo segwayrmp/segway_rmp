@@ -182,6 +182,8 @@ int main(int argc, char **argv) {
         segway=new CSegwayRMP400();
         segway->set_operation_mode(tractor);
         segway->reset_integrators();
+        segway->move(0.0,0.0);
+        ros::Duration(1.0).sleep(); // I think this is needed to prevent accessing the segways before the underlying objects are created?
     } catch(CException &e) {
         ROS_ERROR("%s", e.what().c_str());
         ROS_WARN("It seems like there was an error connecting to the segway, check your connections, permissions, and that the segway powerbase is on.");

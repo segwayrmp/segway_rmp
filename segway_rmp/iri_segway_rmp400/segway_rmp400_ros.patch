@@ -17,7 +17,7 @@ Index: src/segway_RMP400.cpp
 +CSegwayRMP200 *
 +CSegwayRMP400::get_segway(int index) {
 +    if(index == 1 || index == 0)
-+        return segways_[index];
++        return this->segways_[index];
 +    else
 +        throw CSegwayRMP400Exception(_HERE_, "Invalid call to get_segway, index must be 0 or 1.");
 +}
