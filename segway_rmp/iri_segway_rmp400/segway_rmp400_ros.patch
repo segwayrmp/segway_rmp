@@ -10,10 +10,17 @@ Index: src/segway_RMP400.cpp
  
  CSegwayRMP400::CSegwayRMP400()
  {
-@@ -24,6 +24,14 @@
+@@ -24,6 +24,21 @@
      }
  }
  
++bool
++CSegwayRMP400::are_segways_available() {
++    if(this->segways_.size() == 2)
++        return true;
++    return false;
++}
++
 +CSegwayRMP200 *
 +CSegwayRMP400::get_segway(int index) {
 +    if(index == 1 || index == 0)
@@ -29,21 +36,28 @@ Index: src/segway_RMP400.h
 ===================================================================
 --- src/segway_RMP400.h	(revision 17)
 +++ src/segway_RMP400.h	(working copy)
-@@ -36,6 +36,14 @@
-     CSegwayRMP400(const std::string serial1, const std::string serial2);
- 
+@@ -38,6 +38,21 @@
      ~CSegwayRMP400();
-+    
-+    /**
+ 
+     /**
 +    * \brief function to get access to individual segways
 +    *
 +    * Returns a pointer to the CSegwayRMP200 object for the
 +    * powerbase at the given index. (0-1)
 +    */
 +    CSegwayRMP200 * get_segway(int index);
- 
-     /**
++
++    /**
++    * \brief function to determine if the segway objects are accessable
++    *
++    * Returns true if the size of the vector of segways is 2, else returns false
++    */
++    bool are_segways_available();
++
++    /**
      * \brief function to set the operation mode
+     *
+     * Operation modes: tractor or power_down.
 Index: src/CMakeLists.txt
 ===================================================================
 --- src/CMakeLists.txt	(revision 17)

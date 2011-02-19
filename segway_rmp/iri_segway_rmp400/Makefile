@@ -3,7 +3,7 @@ all: installed
 UNAME := $(shell uname -s)
 
 SVN_DIR = build/segway_rmp_400-svn
-SVN_REVISION = -r 17
+SVN_REVISION = -r 17 --trust-server-cert
 SVN_URL = https://haydn.upc.es/labrobotica/pub/drivers/segway_rmp_400
 SVN_PATCH = segway_rmp400_ros.patch
 include $(shell rospack find mk)/svn_checkout.mk

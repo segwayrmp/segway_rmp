@@ -10,7 +10,7 @@ all: installed
 # include $(shell rospack find mk)/download_unpack_build.mk
 
 SVN_DIR = build/utilities-svn
-SVN_REVISION = -r 73
+SVN_REVISION = -r 73 --trust-server-cert
 # SVN_URL = https://haydn.upc.es/labrobotica/pub/applications/utilities
 SVN_URL = https://haydn.upc.es/labrobotica/pub/drivers/iriutils
 SVN_PATCH =    iriutils_ros.patch

@@ -50,6 +50,11 @@ ros::Timer motor_timeout_timer;
 void odometryCallback(const ros::TimerEvent& e) {
     // Grab the time
     ros::Time current_time = ros::Time::now();
+
+    if(!segway->are_segways_available()) {
+        ROS_WARN("Segway objects are not ready to be polled.");
+        return;
+    }
     
     // Grab the newest Segway data and Average the readings from each powerbase
     float forward_displacement = (segway->get_segway(0)->get_forward_displacement()*segway->get_segway(1)->get_forward_displacement())/2; // Meters
@@ -114,6 +119,11 @@ void odometryCallback(const ros::TimerEvent& e) {
 }
 
 void statusCallback(const ros::TimerEvent& e) {
+    if(!segway->are_segways_available()) {
+        ROS_WARN("Segways are not avaialble");
+        return;
+    }
+
     segway_rmp400::SegwayStatus400 msg;
     
     msg.header.stamp = ros::Time::now();
@@ -180,10 +190,12 @@ int main(int argc, char **argv) {
     
     try {
         segway=new CSegwayRMP400();
+        segway->start();
         segway->set_operation_mode(tractor);
-        segway->reset_integrators();
+//        segway->reset_integrators();
         segway->move(0.0,0.0);
-        ros::Duration(1.0).sleep(); // I think this is needed to prevent accessing the segways before the underlying objects are created?
+        if(!segway->are_segways_available())
+            ROS_WARN("Segways are not available!");
     } catch(CException &e) {
         ROS_ERROR("%s", e.what().c_str());
         ROS_WARN("It seems like there was an error connecting to the segway, check your connections, permissions, and that the segway powerbase is on.");

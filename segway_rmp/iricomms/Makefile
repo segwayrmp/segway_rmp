@@ -3,7 +3,7 @@ all: installed
 UNAME := $(shell uname -s)
 
 SVN_DIR = build/communications-svn
-SVN_REVISION = -r 54
+SVN_REVISION = -r 54 --trust-server-cert
 # SVN_URL = https://haydn.upc.es/labrobotica/pub/applications/communications
 SVN_URL = https://haydn.upc.es/labrobotica/pub/drivers/comm
 SVN_PATCH = iricomms_ros.patch
