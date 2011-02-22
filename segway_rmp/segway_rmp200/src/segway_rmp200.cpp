@@ -64,7 +64,7 @@ void odometryCallback(const ros::TimerEvent& e) {
         float delta_forward_displacement = forward_displacement - last_forward_displacement;
         double delta_time = (current_time-last_time).toSec();
         // Update accumulated odometries and calculate the x and y components of velocity
-	odometry_w = yaw_displacement;
+        odometry_w = yaw_displacement;
         float new_odometry_x = delta_forward_displacement * std::cos(odometry_w);
         vel_x = (new_odometry_x - odometry_x)/delta_time;
         odometry_x += new_odometry_x;

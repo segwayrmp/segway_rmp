@@ -182,7 +182,7 @@ void cmd_velCallback(const geometry_msgs::Twist::ConstPtr& msg) {
 }
 
 int main(int argc, char **argv) {
-    ros::init(argc, argv, "segway_rmp200");
+    ros::init(argc, argv, "segway_rmp400");
     
     n = new ros::NodeHandle;
     
