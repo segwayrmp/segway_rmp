@@ -1,6 +1,6 @@
 libusb:
     macports: libusb
-    ubuntu: libusb-1.0-0-dev
+    ubuntu: libusb-dev
 ftd2xx:
     macports: libftd2xx
     ubuntu: |
