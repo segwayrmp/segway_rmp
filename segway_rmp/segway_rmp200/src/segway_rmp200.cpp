@@ -114,7 +114,7 @@ void odometryCallback(const ros::TimerEvent& e) {
     odom_trans.transform.rotation = quat;
 
     //send the transform
-    odom_broadcaster->sendTransform(odom_trans);
+//    odom_broadcaster->sendTransform(odom_trans);
     
     // Publish Odometry
     nav_msgs::Odometry msg;
@@ -124,6 +124,12 @@ void odometryCallback(const ros::TimerEvent& e) {
     msg.pose.pose.position.y = odometry_y;
     msg.pose.pose.position.z = 0.0;
     msg.pose.pose.orientation = quat;
+    msg.pose.covariance[0] = 0.00001;
+    msg.pose.covariance[7] = 0.00001;
+    msg.pose.covariance[14] = 1000000000000.0;
+    msg.pose.covariance[21] = 1000000000000.0;
+    msg.pose.covariance[28] = 1000000000000.0;
+    msg.pose.covariance[35] = 0.001;
     
     msg.child_frame_id = frame_id;
     msg.twist.twist.linear.x = vel_x;
