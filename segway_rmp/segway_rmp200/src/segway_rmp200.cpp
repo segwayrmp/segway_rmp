@@ -4,12 +4,27 @@ BSD License
 Copyright (c) 2011, William Woodall (wjwwood@gmail.com)
 All rights reserved.
 
-Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
+Redistribution and use in source and binary forms, with or without modification, 
+are permitted provided that the following conditions are met:
 
-Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
-Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution.
-Neither the name of the software nor the names of its contributors may be used to endorse or promote products derived from this software without specific prior written permission.
-THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+Redistributions of source code must retain the above copyright notice, this list 
+of conditions and the following disclaimer. Redistributions in binary form must 
+reproduce the above copyright notice, this list of conditions and the following 
+disclaimer in the documentation and/or other materials provided with the 
+distribution. Neither the name of the software nor the names of its contributors 
+may be used to endorse or promote products derived from this software without 
+specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
+ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED 
+WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE 
+DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR 
+ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES 
+(INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; 
+LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON 
+ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT 
+(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS 
+SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
 #include "segway_rmp200.h"
@@ -61,14 +76,18 @@ void odometryCallback(const ros::TimerEvent& e) {
     float vel_x = 0.0;
     float vel_y = 0.0;
     if(!first_odometry) {
-        float delta_forward_displacement = forward_displacement - last_forward_displacement;
+        float delta_forward_displacement = 
+            forward_displacement - last_forward_displacement;
         double delta_time = (current_time-last_time).toSec();
-        // Update accumulated odometries and calculate the x and y components of velocity
+        // Update accumulated odometries and calculate the x and y components 
+        // of velocity
         odometry_w = yaw_displacement;
-        float new_odometry_x = delta_forward_displacement * std::cos(odometry_w);
+        float new_odometry_x = 
+            delta_forward_displacement * std::cos(odometry_w);
         vel_x = (new_odometry_x - odometry_x)/delta_time;
         odometry_x += new_odometry_x;
-        float new_odometry_y = delta_forward_displacement * std::sin(odometry_w);
+        float new_odometry_y = 
+            delta_forward_displacement * std::sin(odometry_w);
         vel_y = (new_odometry_y - odometry_y)/delta_time;
         odometry_y += new_odometry_y;
     } else {
@@ -80,7 +99,8 @@ void odometryCallback(const ros::TimerEvent& e) {
     last_time = current_time;
     
     // Create a Quaternion from the yaw displacement
-    geometry_msgs::Quaternion quat = tf::createQuaternionMsgFromYaw(yaw_displacement);
+    geometry_msgs::Quaternion quat = 
+        tf::createQuaternionMsgFromYaw(yaw_displacement);
     
     // Publish the Transform odom->base_link
     geometry_msgs::TransformStamped odom_trans;
@@ -147,7 +167,8 @@ void motor_timeoutCallback(const ros::TimerEvent& e) {
 
 void cmd_velCallback(const geometry_msgs::Twist::ConstPtr& msg) {
     segway->move(msg->linear.x, msg->angular.z);
-    motor_timeout_timer = n->createTimer(ros::Duration(segway_motor_timeout), motor_timeoutCallback, true);
+    motor_timeout_timer = n->createTimer(ros::Duration(segway_motor_timeout), 
+                                         motor_timeoutCallback, true);
 }
 
 int main(int argc, char **argv) {
@@ -180,7 +201,9 @@ int main(int argc, char **argv) {
         }
     } catch(CException &e) {
         ROS_ERROR("%s", e.what().c_str());
-        ROS_WARN("It seems like there was an error connecting to the segway, check your connections, permissions, and that the segway powerbase is on.");
+        ROS_WARN("It seems like there was an error connecting to the segway, \
+                  check your connections, permissions, and that the segway \
+                  powerbase is on.");
         exit(-1);
     }
     
@@ -191,12 +214,14 @@ int main(int argc, char **argv) {
     // Setup Status Loop
     int segway_status_rate;
     n->param("segway_status_rate", segway_status_rate, 2);
-    ros::Timer status_timer = n->createTimer(ros::Duration(1.0/segway_status_rate), statusCallback);
+    ros::Timer status_timer = 
+        n->createTimer(ros::Duration(1.0/segway_status_rate), statusCallback);
     
     // Setup Odometry Loop
     int segway_odom_rate;
     n->param("segway_odom_rate", segway_odom_rate, 30);
-    ros::Timer odom_timer = n->createTimer(ros::Duration(1.0/segway_odom_rate), odometryCallback);
+    ros::Timer odom_timer = 
+        n->createTimer(ros::Duration(1.0/segway_odom_rate), odometryCallback);
     
     // Setup Motor Timeout
     n->param("segway_motor_timeout", segway_motor_timeout, 0.5);
@@ -205,7 +230,8 @@ int main(int argc, char **argv) {
     n->param("frame_id", frame_id, std::string("base_link"));
     
     // Setup the Segway Status Publisher
-    segway_status_pub = n->advertise<segway_rmp200::SegwayStatus>("segway_status", 1000);
+    segway_status_pub = 
+        n->advertise<segway_rmp200::SegwayStatus>("segway_status", 1000);
     
     // Setup the Odometry Publisher
     odom_pub = n->advertise<nav_msgs::Odometry>("odom", 50);
@@ -218,7 +244,7 @@ int main(int argc, char **argv) {
     ROS_INFO("Shutting Down Segway Interface.");
     segway->stop();
     delete ((ros::Timer)motor_timeout_timer);
-    // segway->close();  // This seems to hang the program on exit, need to look into that...
+    // segway->close(); // This seems to hang the program on exit...
     
     return 0;
 }
