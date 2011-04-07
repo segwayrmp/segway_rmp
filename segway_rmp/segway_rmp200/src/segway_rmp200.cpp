@@ -61,6 +61,8 @@ ros::Publisher segway_status_pub;
 ros::Publisher odom_pub;
 tf::TransformBroadcaster *odom_broadcaster;
 ros::Timer motor_timeout_timer;
+bool invert_x = false;
+bool invert_z = false;
 
 void odometryCallback(const ros::TimerEvent& e) {
     // Grab the time
@@ -172,7 +174,12 @@ void motor_timeoutCallback(const ros::TimerEvent& e) {
 }
 
 void cmd_velCallback(const geometry_msgs::Twist::ConstPtr& msg) {
-    segway->move(msg->linear.x, msg->angular.z);
+    double x = msg->linear.x, z = msg->angular.z;
+    if(invert_x)
+        x *= -1;
+    if(invert_z)
+        z *= -1;
+    segway->move(x, z);
     motor_timeout_timer = n->createTimer(ros::Duration(segway_motor_timeout), 
                                          motor_timeoutCallback, true);
 }
@@ -208,8 +215,7 @@ int main(int argc, char **argv) {
     } catch(CException &e) {
         ROS_ERROR("%s", e.what().c_str());
         ROS_WARN("It seems like there was an error connecting to the segway, \
-                  check your connections, permissions, and that the segway \
-                  powerbase is on.");
+check your connections, permissions, and that the segway powerbase is on.");
         exit(-1);
     }
     
@@ -244,6 +250,10 @@ int main(int argc, char **argv) {
     
     // Setup the TF broadcaster
     odom_broadcaster = new tf::TransformBroadcaster;
+    
+    // Get cmd_vel inversion parameters
+    n->param("invert_x", invert_x, false);
+    n->param("invert_z", invert_z, false);
     
     ros::spin();
     
