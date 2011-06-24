@@ -269,7 +269,7 @@ private:
     void setupSegwayRMP() {
         std::stringstream ss;
         ss << "Connecting to Segway RMP via ";
-        this->segway_rmp = new segwayrmp::SegwayRMP(this->interface_type);
+        this->segway_rmp = new segwayrmp::SegwayRMP(this->interface_type, this->segway_rmp_type);
         if (this->interface_type_str == "serial") {
             ss << "serial on serial port: " << this->serial_port;
             this->segway_rmp->configureSerial(this->serial_port);
@@ -327,8 +327,8 @@ private:
             }
         } else {
             ROS_ERROR(
-             "Invalid interface type: %s, valid interface types are 'serial' and 'usb'.",
-             this->interface_type_str.c_str());
+                "Invalid interface type: %s, valid interface types are 'serial' and 'usb'.",
+                this->interface_type_str.c_str());
             return 1;
         }
         // Get Setup Motor Timeout
@@ -345,6 +345,19 @@ private:
         n->param("invert_z", invert_z, false);
         // Get option for enable/disable tf broadcasting
         n->param("broadcast_tf", this->broadcast_tf, true);
+        // Get the segway rmp type
+        std::string segway_rmp_type_str;
+        n->param("rmp_type", segway_rmp_type_str, std::string("200/400"));
+        if (segway_rmp_type_str == "200/400") {
+            this->segway_rmp_type = segwayrmp::rmp200;
+        } else if (segway_rmp_type_str == "50/100") {
+            this->segway_rmp_type = segwayrmp::rmp100;
+        } else {
+            ROS_ERROR(
+                "Invalid rmp type: %s, valid rmp types are '200/400' and '50/100'.",
+                segway_rmp_type_str.c_str());
+            return 1;
+        }
         return 0;
     }
     
@@ -362,6 +375,7 @@ private:
     
     std::string interface_type_str;
     segwayrmp::InterfaceType interface_type;
+    segwayrmp::SegwayRMPType segway_rmp_type;
     std::string serial_port;
     std::string usb_selector;
     std::string serial_number;
