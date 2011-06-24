@@ -51,20 +51,21 @@ import sys
 import traceback
 
 ###  Variables  ###
-LINEAR_SCALAR = 1.0
-ANGULAR_SCALAR = 0.2
+LINEAR_SCALAR = None
+ANGULAR_SCALAR = None
 
 ###  Classes  ###
 
 class Joy2Twist(object):
     """Joy2Twist ROS Node"""
     def __init__(self):
+        global LINEAR_SCALAR, ANGULAR_SCALAR
         # Initialize the Node
         rospy.init_node("Joy2Twist")
         
         # Get the linear scalar and angular scalar parameter
-        LINEAR_SCALAR = rospy.get_param('linear_scalar', 1.0)
-        ANGULAR_SCALAR = rospy.get_param('angular_scalar', 0.2)
+        LINEAR_SCALAR = rospy.get_param('linear_scalar', 0.2)
+        ANGULAR_SCALAR = rospy.get_param('angular_scalar', 0.05)
         
         # Setup the Joy topic subscription
         self.joy_subscriber = rospy.Subscriber("joy", Joy, self.handleJoyMessage, queue_size=1)
@@ -77,9 +78,12 @@ class Joy2Twist(object):
     
     def handleJoyMessage(self, data):
         """Handles incoming Joy messages"""
+        global LINEAR_SCALAR, ANGULAR_SCALAR
         msg = Twist()
-        msg.linear.x = data.axes[1] * LINEAR_SCALAR
-        msg.angular.z = data.axes[0] * ANGULAR_SCALAR
+#        msg.linear.x = data.axes[1] * LINEAR_SCALAR
+#        msg.angular.z = data.axes[0] * ANGULAR_SCALAR
+        msg.linear.x = data.axes[1] * LINEAR_SCALAR * (1 + ((1 - (1 + data.axes[2])/2.0)*5))
+        msg.angular.z = data.axes[0] * ANGULAR_SCALAR * (1 + ((1 - (1 + data.axes[2])/2.0)*3))
         self.twist_publisher.publish(msg)
     
 
