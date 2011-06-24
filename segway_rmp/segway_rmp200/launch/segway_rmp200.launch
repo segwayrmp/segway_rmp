@@ -33,5 +33,8 @@
         
         <!-- Enabled/Disable TF broadcasting -->
         <param name="broadcast_tf" value="true" />
+
+        <!-- Commonly you need to remap to just /cmd_vel -->
+        <remap from="~cmd_vel" to="/cmd_vel" />
     </node>
 </launch>
