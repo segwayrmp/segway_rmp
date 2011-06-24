@@ -8,7 +8,7 @@
   <license>BSD</license>
   <review status="unreviewed" notes=""/>
   <url>http://ros.org/wiki/libsegwayrmp</url>
-  <depend package="serial" />
+  <depend package="serial_segway_rmp" />
   <rosdep name="libusb" />
   <rosdep name="ftd2xx" />
   
