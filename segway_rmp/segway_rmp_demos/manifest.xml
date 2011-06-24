@@ -8,7 +8,7 @@
   <license>BSD</license>
   <review status="unreviewed" notes=""/>
   <url>http://ros.org/wiki/segway_rmp200_demos</url>
-  <depend package="segway_rmp200"/>
+  <depend package="segway_rmpX"/>
   <depend package="joy2twist"/>
 
 </package>

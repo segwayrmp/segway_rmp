@@ -1,13 +1,13 @@
 <package>
-  <description brief="segway_rmp200">
+  <description brief="segway_rmpX">
 
-     segway_rmp200
+     segway_rmpX
 
   </description>
   <author>William Woodall</author>
   <license>BSD</license>
   <review status="unreviewed" notes=""/>
-  <url>http://ros.org/wiki/segway_rmp200</url>
+  <url>http://ros.org/wiki/segway_rmpX</url>
   <depend package="roscpp"/>
   <depend package="tf"/>
   <depend package="geometry_msgs"/>
