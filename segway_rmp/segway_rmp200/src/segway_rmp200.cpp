@@ -86,6 +86,9 @@ public:
         // Setup keep alive timer
         this->keep_alive_timer = n->createTimer(ros::Duration(1.0/20.0), &SegwayRMPNode::keepAliveCallback, this);
         
+        ros::AsyncSpinner spinner(1);
+        spinner.start();
+        
         this->connected = false;
         while (ros::ok()) {
             try {
@@ -133,6 +136,8 @@ public:
     }
     
     void handleStatus(segwayrmp::SegwayStatus &ss) {
+        if (!this->connected)
+            return;
         // Get the time
         ros::Time current_time = ros::Time::now();
         
@@ -238,6 +243,8 @@ public:
     }
     
     void cmd_velCallback(const geometry_msgs::Twist::ConstPtr& msg) {
+        if (!this->connected)
+            return;
         boost::mutex::scoped_lock lock(m_mutex);
         double x = msg->linear.x, z = msg->angular.z;
         if (this->invert_x) {
