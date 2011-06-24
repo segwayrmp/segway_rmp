@@ -39,7 +39,8 @@ class SegwayRMPNode;
 
 static SegwayRMPNode * segwayrmp_node_instance;
 
-static double degrees_to_radians = 180.0 / M_PI;
+static double radians_to_degrees = 180.0 / M_PI;
+static double degrees_to_radians = M_PI / 180.0;
 
 // Message Wrappers
 void handleDebugMessages(const std::string &msg) {ROS_DEBUG("%s",msg.c_str());}
@@ -254,7 +255,7 @@ public:
             z *= -1;
         }
         this->linear_vel = x;
-        this->angular_vel = z;
+        this->angular_vel = z * radians_to_degrees; // Convert to degrees
         this->motor_timeout_timer = 
             this->n->createTimer(
                 ros::Duration(this->segway_motor_timeout),
