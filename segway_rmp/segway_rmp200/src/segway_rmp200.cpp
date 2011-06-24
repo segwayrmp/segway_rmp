@@ -108,7 +108,7 @@ public:
         if (ros::ok() && this->connected) {
             ROS_INFO("Segway RMP Ready.");
             while (ros::ok() && this->connected) {
-                ros::spinOnce();
+                ros::Duration(1.0).sleep();
             }
         }
         if (ros::ok()) { // Error not shutdown
@@ -120,7 +120,7 @@ public:
     
     void keepAliveCallback(const ros::TimerEvent& e) {
         if (ros::ok()) {
-            boost::mutex::scoped_lock lock(m_mutex);
+            boost::mutex::scoped_lock lock(this->m_mutex);
             try {
                 this->segway_rmp->move(this->linear_vel, this->angular_vel);
             } catch (std::exception& e) {
