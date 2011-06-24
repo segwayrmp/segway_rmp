@@ -21,4 +21,6 @@ ftd2xx:
             sudo ln -s libftd2xx.so.1.0.4 libftd2xx.so
             cd /usr/lib
             sudo ln -s /usr/local/lib/libftd2xx.so.1.0.4 libftd2xx.so
+            cd /tmp/ros/ros-deps/libftd2xx1*
+            sudo cp ftd2xx.h WinTypes.h /usr/local/include/
         fi

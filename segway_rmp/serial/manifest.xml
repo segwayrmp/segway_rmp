@@ -1,0 +1,17 @@
+<package>
+  <description brief="serial">
+
+     serial
+
+  </description>
+  <author>William Woodall</author>
+  <license>MIT</license>
+  <review status="unreviewed" notes=""/>
+  <url>http://ros.org/wiki/serial</url>
+  
+  <export>
+    <cpp cflags="-I${prefix}/include" lflags="-L${prefix}/lib -Wl,-rpath,${prefix}/lib -llibserial.a"/>
+    <cpp os="osx" cflags="-I${prefix}/include" lflags="-L${prefix}/lib -Wl,-rpath,${prefix}/lib -llibserial.dylib -lboost_system"/>
+  </export>
+
+</package>

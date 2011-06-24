@@ -1,266 +1,414 @@
 /*
-BSD License
+ * The MIT License (MIT)
+ * Copyright (c) 2011 William Woodall <wjwwood@gmail.com>
+ * 
+ * Permission is hereby granted, free of charge, to any person obtaining a 
+ * copy of this software and associated documentation files (the "Software"), 
+ * to deal in the Software without restriction, including without limitation 
+ * the rights to use, copy, modify, merge, publish, distribute, sublicense, 
+ * and/or sell copies of the Software, and to permit persons to whom the 
+ * Software is furnished to do so, subject to the following conditions:
+ * 
+ * The above copyright notice and this permission notice shall be included 
+ * in all copies or substantial portions of the Software.
+ * 
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR 
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, 
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL 
+ * THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER 
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING 
+ * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER 
+ * DEALINGS IN THE SOFTWARE.
+ */
 
-Copyright (c) 2011, William Woodall (wjwwood@gmail.com)
-All rights reserved.
-
-Redistribution and use in source and binary forms, with or without modification, 
-are permitted provided that the following conditions are met:
-
-Redistributions of source code must retain the above copyright notice, this list 
-of conditions and the following disclaimer. Redistributions in binary form must 
-reproduce the above copyright notice, this list of conditions and the following 
-disclaimer in the documentation and/or other materials provided with the 
-distribution. Neither the name of the software nor the names of its contributors 
-may be used to endorse or promote products derived from this software without 
-specific prior written permission.
-
-THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
-ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED 
-WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE 
-DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR 
-ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES 
-(INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; 
-LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON 
-ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT 
-(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS 
-SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-*/
-
-#include "segway_rmp200.h"
-#include "ftdiexceptions.h"
-#include "ftdiserver.h"
-#include "ftdimodule.h"
 #include <iostream>
 #include <sstream>
-#include <math.h>
+#include <cmath>
+
+#include <boost/thread.hpp>
 
 #include "ros/ros.h"
 #include <tf/transform_broadcaster.h>
 #include "geometry_msgs/Twist.h"
 #include "nav_msgs/Odometry.h"
-#include "segway_rmp200/SegwayStatus.h"
+#include "segway_rmp200/SegwayStatusStamped.h"
 
-#define pi 3.14159265
+#include "segwayrmp.h"
 
-// Segway Interface Variables
-std::string segway_name="segway";
-CSegwayRMP200 *segway;
+class SegwayRMPNode;
 
-// Persistent Odometry Variables
-bool first_odometry = true;
-float last_forward_displacement = 0, last_yaw_displacement = 0;
-float odometry_x = 0.0, odometry_y = 0.0, odometry_w = 0.0;
-ros::Time last_time;
+static SegwayRMPNode * segwayrmp_node_instance;
 
-// ROS variables
-ros::NodeHandle *n;
-std::string frame_id = "base_link";
-double segway_motor_timeout = 0.5;
-ros::Publisher segway_status_pub;
-ros::Publisher odom_pub;
-tf::TransformBroadcaster *odom_broadcaster;
-ros::Timer motor_timeout_timer;
-bool invert_x = false;
-bool invert_z = false;
+static double degrees_to_radians = 180.0 / M_PI;
 
-void odometryCallback(const ros::TimerEvent& e) {
-    // Grab the time
-    ros::Time current_time = ros::Time::now();
-    
-    // Grab the newest Segway data
-    float forward_displacement = segway->get_forward_displacement(); // Meters
-    float yaw_displacement = segway->get_yaw_displacement()*2*pi; // Radians
-    float yaw_rate = segway->get_yaw_rate()*(pi/180.0); // radians/s
-    
-    // Integrate the displacements over time
-    // If not the first odometry calculate the delta in displacements
-    float vel_x = 0.0;
-    float vel_y = 0.0;
-    if(!first_odometry) {
-        float delta_forward_displacement = 
-            forward_displacement - last_forward_displacement;
-        double delta_time = (current_time-last_time).toSec();
-        // Update accumulated odometries and calculate the x and y components 
-        // of velocity
-        odometry_w = yaw_displacement;
-        float new_odometry_x = 
-            delta_forward_displacement * std::cos(odometry_w);
-        vel_x = (new_odometry_x - odometry_x)/delta_time;
-        odometry_x += new_odometry_x;
-        float new_odometry_y = 
-            delta_forward_displacement * std::sin(odometry_w);
-        vel_y = (new_odometry_y - odometry_y)/delta_time;
-        odometry_y += new_odometry_y;
-    } else {
-        first_odometry = false;
+// Message Wrappers
+void handleDebugMessages(const std::string &msg) {ROS_DEBUG("%s",msg.c_str());}
+void handleInfoMessages(const std::string &msg) {ROS_INFO("%s",msg.c_str());}
+void handleErrorMessages(const std::string &msg) {ROS_ERROR("%s",msg.c_str());}
+
+void handleStatusWrapper(segwayrmp::SegwayStatus &ss);
+
+// ROS Node class
+class SegwayRMPNode {
+public:
+    SegwayRMPNode() {
+        n = new ros::NodeHandle("~");
+        this->segway_rmp = NULL;
+        this->target_linear_vel = 0.0;
+        this->first_odometry = false;
+        this->last_forward_displacement = 0.0;
+        this->last_yaw_displacement = 0.0;
+        this->odometry_x = 0.0;
+        this->odometry_y = 0.0;
+        this->odometry_w = 0.0;
+        this->count = 0;
     }
-    // No matter what update the previouse (last) displacements
-    last_forward_displacement = forward_displacement;
-    last_yaw_displacement = yaw_displacement;
-    last_time = current_time;
     
-    // Create a Quaternion from the yaw displacement
-    geometry_msgs::Quaternion quat = 
-        tf::createQuaternionMsgFromYaw(yaw_displacement);
+    ~SegwayRMPNode() {
+        this->disconnect();
+    }
     
-    // Publish the Transform odom->base_link
+    void disconnect() {
+        if (this->segway_rmp != NULL)
+            delete this->segway_rmp;
+        this->segway_rmp = NULL;
+    }
+    
+    void run() {
+        if (this->getParameters()) {
+            return;
+        }
+        
+        this->setupSegwayRMP();
+        
+        this->setupROSComms();
+        
+        // Setup keep alive timer
+        this->keep_alive_timer = n->createTimer(ros::Duration(1.0/20.0), &SegwayRMPNode::keepAliveCallback, this);
+        
+        this->connected = false;
+        while (ros::ok()) {
+            try {
+                this->segway_rmp->connect();
+                this->connected = true;
+            } catch (std::exception& e) {
+                std::string e_msg(e.what());
+                ROS_ERROR("Exception while connecting to the SegwayRMP, check your cables and power buttons.");
+                ROS_ERROR("    %s", e_msg.c_str());
+                this->connected = false;
+            }
+            if (this->spin()) { // ROS is OK, but we aren't connected, wait then try again
+                ROS_WARN("Not connected to the SegwayRMP, will retry in 5 seconds...");
+                ros::Duration(5).sleep();
+            }
+        }
+    }
+    
+    bool spin() {
+        if (ros::ok() && this->connected) {
+            ROS_INFO("Segway RMP Ready.");
+            while (ros::ok() && this->connected) {
+                ros::spinOnce();
+            }
+        }
+        if (ros::ok()) { // Error not shutdown
+            return true;
+        } else {         // Shutdown
+            return false;
+        }
+    }
+    
+    void keepAliveCallback(const ros::TimerEvent& e) {
+        if (ros::ok()) {
+            boost::mutex::scoped_lock lock(m_mutex);
+            try {
+                this->segway_rmp->move(this->linear_vel, this->angular_vel);
+            } catch (std::exception& e) {
+                std::string e_msg(e.what());
+                ROS_ERROR("Error commanding Segway RMP: %s", e_msg.c_str());
+                this->connected = false;
+                this->disconnect();
+            }
+        }
+    }
+    
+    void handleStatus(segwayrmp::SegwayStatus &ss) {
+        // Get the time
+        ros::Time current_time = ros::Time::now();
+        
+        this->sss_msg.header.stamp = current_time;
+        
+        this->sss_msg.segway.pitch_angle = ss.pitch * degrees_to_radians;
+        this->sss_msg.segway.pitch_rate = ss.pitch_rate * degrees_to_radians;
+        this->sss_msg.segway.roll_angle = ss.roll * degrees_to_radians;
+        this->sss_msg.segway.roll_rate = ss.roll_rate * degrees_to_radians;
+        this->sss_msg.segway.left_wheel_velocity = ss.left_wheel_speed;
+        this->sss_msg.segway.right_wheel_velocity = ss.right_wheel_speed;
+        this->sss_msg.segway.yaw_rate = ss.yaw_rate * degrees_to_radians;
+        this->sss_msg.segway.servo_frames = ss.servo_frames;
+        this->sss_msg.segway.left_wheel_displacement = ss.integrated_left_wheel_position;
+        this->sss_msg.segway.right_wheel_displacement = ss.integrated_right_wheel_position;
+        this->sss_msg.segway.forward_displacement = ss.integrated_forward_position;
+        this->sss_msg.segway.yaw_displacement = ss.integrated_turn_position * degrees_to_radians;
+        this->sss_msg.segway.left_motor_torque = ss.left_motor_torque;
+        this->sss_msg.segway.right_motor_torque = ss.right_motor_torque;
+        this->sss_msg.segway.operation_mode = ss.operational_mode;
+        this->sss_msg.segway.gain_schedule = ss.controller_gain_schedule;
+        this->sss_msg.segway.ui_battery = ss.ui_battery_voltage;
+        this->sss_msg.segway.powerbase_battery = ss.powerbase_battery_voltage;
+        this->sss_msg.segway.motors_enabled = (bool)(ss.motor_status);
+        
+        segway_status_pub.publish(this->sss_msg);
+        
+        // TODO: possibly spin this off in another thread
+        
+        // Grab the newest Segway data
+        float forward_displacement = ss.integrated_forward_position;
+        float yaw_displacement = ss.integrated_turn_position * degrees_to_radians;
+        float yaw_rate = ss.yaw_rate * degrees_to_radians;
+        
+        // Integrate the displacements over time
+        // If not the first odometry calculate the delta in displacements
+        float vel_x = 0.0;
+        float vel_y = 0.0;
+        if(!this->first_odometry) {
+            float delta_forward_displacement = 
+                forward_displacement - this->last_forward_displacement;
+            double delta_time = (current_time-this->last_time).toSec();
+            // Update accumulated odometries and calculate the x and y components 
+            // of velocity
+            this->odometry_w = yaw_displacement;
+            float new_odometry_x = 
+                delta_forward_displacement * std::cos(this->odometry_w);
+            vel_x = (new_odometry_x - this->odometry_x)/delta_time;
+            this->odometry_x += new_odometry_x;
+            float new_odometry_y = 
+                delta_forward_displacement * std::sin(this->odometry_w);
+            vel_y = (new_odometry_y - this->odometry_y)/delta_time;
+            this->odometry_y += new_odometry_y;
+        } else {
+            this->first_odometry = false;
+        }
+        // No matter what update the previouse (last) displacements
+        this->last_forward_displacement = forward_displacement;
+        this->last_yaw_displacement = yaw_displacement;
+        this->last_time = current_time;
+        
+        // Create a Quaternion from the yaw displacement
+        geometry_msgs::Quaternion quat = 
+            tf::createQuaternionMsgFromYaw(yaw_displacement);
+        
+        // Publish the Transform odom->base_link
+        if (this->broadcast_tf) {
+            this->odom_trans.header.stamp = current_time;
+            
+            this->odom_trans.transform.translation.x = this->odometry_x;
+            this->odom_trans.transform.translation.y = this->odometry_y;
+            this->odom_trans.transform.translation.z = 0.0;
+            this->odom_trans.transform.rotation = quat;
+            
+            //send the transform
+            this->odom_broadcaster.sendTransform(this->odom_trans);
+        }
+        
+        // Publish Odometry
+        this->odom_msg.header.stamp = current_time;
+        this->odom_msg.pose.pose.position.x = this->odometry_x;
+        this->odom_msg.pose.pose.position.y = this->odometry_y;
+        this->odom_msg.pose.pose.position.z = 0.0;
+        this->odom_msg.pose.pose.orientation = quat;
+        this->odom_msg.pose.covariance[0] = 0.00001;
+        this->odom_msg.pose.covariance[7] = 0.00001;
+        this->odom_msg.pose.covariance[14] = 1000000000000.0;
+        this->odom_msg.pose.covariance[21] = 1000000000000.0;
+        this->odom_msg.pose.covariance[28] = 1000000000000.0;
+        this->odom_msg.pose.covariance[35] = 0.001;
+        
+        this->odom_msg.twist.twist.linear.x = vel_x;
+        this->odom_msg.twist.twist.linear.y = vel_y;
+        this->odom_msg.twist.twist.angular.z = yaw_rate;
+        
+        this->odom_pub.publish(this->odom_msg);
+    }
+    
+    void motor_timeoutCallback(const ros::TimerEvent& e) {
+        boost::mutex::scoped_lock lock(m_mutex);
+        this->target_linear_vel = 0.0;
+        this->angular_vel = 0.0;
+    }
+    
+    void cmd_velCallback(const geometry_msgs::Twist::ConstPtr& msg) {
+        boost::mutex::scoped_lock lock(m_mutex);
+        double x = msg->linear.x, z = msg->angular.z;
+        if (this->invert_x) {
+            x *= -1;
+        }
+        if (this->invert_z) {
+            z *= -1;
+        }
+        this->linear_vel = x;
+        this->angular_vel = z;
+        this->motor_timeout_timer = 
+            this->n->createTimer(
+                ros::Duration(this->segway_motor_timeout),
+                &SegwayRMPNode::motor_timeoutCallback, 
+                this, 
+                true);
+    }
+private:
+    // Functions
+    void setupROSComms() {
+        // Subscribe to command velocities
+        this->cmd_velSubscriber = n->subscribe("cmd_vel", 1000, &SegwayRMPNode::cmd_velCallback, this);
+        // Advertise the SegwayStatusStamped
+        this->segway_status_pub = n->advertise<segway_rmp200::SegwayStatusStamped>("segway_status", 1000);
+        // Advertise the Odometry Msg
+        this->odom_pub = n->advertise<nav_msgs::Odometry>("odom", 50);
+    }
+    
+    void setupSegwayRMP() {
+        std::stringstream ss;
+        ss << "Connecting to Segway RMP via ";
+        this->segway_rmp = new segwayrmp::SegwayRMP(this->interface_type);
+        if (this->interface_type_str == "serial") {
+            ss << "serial on serial port: " << this->serial_port;
+            this->segway_rmp->configureSerial(this->serial_port);
+        } else if (this->interface_type_str == "usb") {
+            ss << "usb ";
+            if (this->usb_selector == "serial_number") {
+                ss << "identified by the device serial number: " << this->serial_number;
+                this->segway_rmp->configureUSBBySerial(this->serial_number);
+            }
+            if (this->usb_selector == "description") {
+                ss << "identified by the device description: " << this->usb_description;
+                this->segway_rmp->configureUSBByDescription(this->usb_description);
+            }
+            if (this->usb_selector == "index") {
+                ss << "identified by the device index: " << this->usb_index;
+                this->segway_rmp->configureUSBByIndex(this->usb_index);
+            }
+        }
+        ROS_INFO("%s", ss.str().c_str());
+        
+        // Set the instance variable
+        segwayrmp_node_instance = this;
+        
+        // Set callbacks for segway data and messages
+        this->segway_rmp->setStatusCallback(handleStatusWrapper);
+        this->segway_rmp->setDebugMsgCallback(handleDebugMessages);
+        this->segway_rmp->setInfoMsgCallback(handleInfoMessages);
+        this->segway_rmp->setErrorMsgCallback(handleErrorMessages);
+    }
+    
+    int getParameters() {
+        // Get Interface Type
+        n->param("interface_type", this->interface_type_str, std::string("serial"));
+        // Get Configurations based on Interface Type
+        if (this->interface_type_str == "serial") {
+            this->interface_type = segwayrmp::serial;
+            n->param("serial_port", this->serial_port, std::string("/dev/ttyUSB0"));
+        } else if (this->interface_type_str == "usb") {
+            this->interface_type = segwayrmp::usb;
+            n->param("usb_selector", this->usb_selector, std::string("index"));
+            if (this->usb_selector == "index") {
+                n->param("usb_index", this->usb_index, 0);
+            } else if (this->usb_selector == "serial_number") {
+                n->param("usb_serial_number", this->serial_number, std::string("00000000"));
+                if (this->serial_number == std::string("00000000")) {
+                    ROS_WARN("The serial_number parameter is set to the default 00000000, which shouldn't work.");
+                }
+            } else if (this->usb_selector == "description") {
+                n->param("usb_description", this->serial_number, std::string("Robotic Mobile Platform"));
+            } else {
+                ROS_ERROR(
+                    "Invalid USB selector: %s, valid types are 'index', 'serial_number', and 'description'.", 
+                    this->usb_selector.c_str());
+                return 1;
+            }
+        } else {
+            ROS_ERROR(
+             "Invalid interface type: %s, valid interface types are 'serial' and 'usb'.",
+             this->interface_type_str.c_str());
+            return 1;
+        }
+        // Get Setup Motor Timeout
+        n->param("segway_motor_timeout", this->segway_motor_timeout, 0.5);
+        // Get frame id parameter
+        n->param("frame_id", frame_id, std::string("base_link"));
+        this->sss_msg.header.frame_id = this->frame_id;
+        this->odom_trans.header.frame_id = "odom";
+        this->odom_trans.child_frame_id = this->frame_id;
+        this->odom_msg.header.frame_id = "odom";
+        this->odom_msg.child_frame_id = this->frame_id;
+        // Get cmd_vel inversion parameters
+        n->param("invert_x", invert_x, false);
+        n->param("invert_z", invert_z, false);
+        // Get option for enable/disable tf broadcasting
+        n->param("broadcast_tf", this->broadcast_tf, true);
+        return 0;
+    }
+    
+    // Variables
+    ros::NodeHandle * n;
+    
+    ros::Timer keep_alive_timer;
+    
+    ros::Subscriber cmd_velSubscriber;
+    ros::Publisher segway_status_pub;
+    ros::Publisher odom_pub;
+    tf::TransformBroadcaster odom_broadcaster;
+    
+    segwayrmp::SegwayRMP * segway_rmp;
+    
+    std::string interface_type_str;
+    segwayrmp::InterfaceType interface_type;
+    std::string serial_port;
+    std::string usb_selector;
+    std::string serial_number;
+    std::string usb_description;
+    int usb_index;
+    
+    double segway_motor_timeout;
+    ros::Timer motor_timeout_timer;
+    
+    std::string frame_id;
+    bool invert_x, invert_z;
+    bool broadcast_tf;
+    
+    double target_linear_vel;
+    double linear_vel;
+    double angular_vel;
+    
+    bool connected;
+    
+    segway_rmp200::SegwayStatusStamped sss_msg;
     geometry_msgs::TransformStamped odom_trans;
-    odom_trans.header.stamp = current_time;
-    odom_trans.header.frame_id = "odom";
-    odom_trans.child_frame_id = frame_id;
+    nav_msgs::Odometry odom_msg;
+    
+    int count;
+    
+    bool first_odometry;
+    float last_forward_displacement;
+    float last_yaw_displacement;
+    float odometry_x;
+    float odometry_y;
+    float odometry_w;
+    ros::Time last_time;
+    
+    boost::mutex m_mutex;
+};
 
-    odom_trans.transform.translation.x = odometry_x;
-    odom_trans.transform.translation.y = odometry_y;
-    odom_trans.transform.translation.z = 0.0;
-    odom_trans.transform.rotation = quat;
-
-    //send the transform
-//    odom_broadcaster->sendTransform(odom_trans);
-    
-    // Publish Odometry
-    nav_msgs::Odometry msg;
-    msg.header.stamp = current_time;
-    msg.header.frame_id = "odom";
-    msg.pose.pose.position.x = odometry_x;
-    msg.pose.pose.position.y = odometry_y;
-    msg.pose.pose.position.z = 0.0;
-    msg.pose.pose.orientation = quat;
-    msg.pose.covariance[0] = 0.00001;
-    msg.pose.covariance[7] = 0.00001;
-    msg.pose.covariance[14] = 1000000000000.0;
-    msg.pose.covariance[21] = 1000000000000.0;
-    msg.pose.covariance[28] = 1000000000000.0;
-    msg.pose.covariance[35] = 0.001;
-    
-    msg.child_frame_id = frame_id;
-    msg.twist.twist.linear.x = vel_x;
-    msg.twist.twist.linear.y = vel_y;
-    msg.twist.twist.angular.z = yaw_rate;
-    
-    odom_pub.publish(msg);
-}
-
-void statusCallback(const ros::TimerEvent& e) {
-    segway_rmp200::SegwayStatus msg;
-    
-    msg.header.stamp = ros::Time::now();
-    msg.header.frame_id = frame_id;
-    
-    msg.pitch_angle = segway->get_pitch_angle();
-    msg.pitch_rate = segway->get_pitch_rate();
-    msg.roll_angle = segway->get_roll_angle();
-    msg.roll_rate = segway->get_roll_rate();
-    msg.left_wheel_velocity = segway->get_left_wheel_velocity();
-    msg.right_wheel_velocity = segway->get_right_wheel_velocity();
-    msg.yaw_rate = segway->get_yaw_rate();
-    msg.servo_frames = segway->get_servo_frames();
-    msg.left_wheel_displacement = segway->get_left_wheel_displacement();
-    msg.right_wheel_displacement = segway->get_right_wheel_displacement();
-    msg.forward_displacement = segway->get_forward_displacement();
-    msg.yaw_displacement = segway->get_yaw_displacement();
-    msg.left_motor_torque = segway->get_left_motor_torque();
-    msg.right_motor_torque = segway->get_right_motor_torque();
-    msg.operation_mode = segway->get_operation_mode();
-    msg.gain_schedule = segway->get_gain_schedule();
-    msg.ui_battery = segway->get_ui_battery_voltage();
-    msg.powerbase_battery = segway->get_powerbase_battery_voltage();
-    
-    segway_status_pub.publish(msg);
-}
-
-void motor_timeoutCallback(const ros::TimerEvent& e) {
-    segway->stop();
-}
-
-void cmd_velCallback(const geometry_msgs::Twist::ConstPtr& msg) {
-    double x = msg->linear.x, z = msg->angular.z;
-    if(invert_x)
-        x *= -1;
-    if(invert_z)
-        z *= -1;
-    segway->move(x, z);
-    motor_timeout_timer = n->createTimer(ros::Duration(segway_motor_timeout), 
-                                         motor_timeoutCallback, true);
+// Callback wrapper
+void handleStatusWrapper(segwayrmp::SegwayStatus &ss) {
+    segwayrmp_node_instance->handleStatus(ss);
 }
 
 int main(int argc, char **argv) {
     ros::init(argc, argv, "segway_rmp200");
     
-    n = new ros::NodeHandle;
+    SegwayRMPNode segwayrmp_node;
     
-    ROS_INFO("Setting up Segway Interface.");
-    
-    CFTDIServer *ftdi_server=CFTDIServer::instance();
-    std::string serial_number;
-    
-    try {
-        ftdi_server->add_custom_PID(0xE729);
-        if(ftdi_server->get_num_devices()>0) {
-            serial_number=ftdi_server->get_serial_number(0);
-            segway=new CSegwayRMP200(segway_name);
-            segway->connect(serial_number);
-            segway->unlock_balance();
-            segway->set_operation_mode(balance);
-            segway->set_gain_schedule(light);
-            segway->reset_right_wheel_integrator();
-            usleep(10000);
-            segway->reset_left_wheel_integrator();
-            usleep(10000);
-            segway->reset_yaw_integrator();
-            usleep(10000);
-            segway->reset_forward_integrator();
-            usleep(10000);
-        }
-    } catch(CException &e) {
-        ROS_ERROR("%s", e.what().c_str());
-        ROS_WARN("It seems like there was an error connecting to the segway, \
-check your connections, permissions, and that the segway powerbase is on.");
-        exit(-1);
-    }
-    
-    ros::Subscriber sub = n->subscribe("cmd_vel", 1000, cmd_velCallback);
-    
-    ROS_INFO("Segway Ready.");
-    
-    // Setup Status Loop
-    int segway_status_rate;
-    n->param("segway_status_rate", segway_status_rate, 2);
-    ros::Timer status_timer = 
-        n->createTimer(ros::Duration(1.0/segway_status_rate), statusCallback);
-    
-    // Setup Odometry Loop
-    int segway_odom_rate;
-    n->param("segway_odom_rate", segway_odom_rate, 30);
-    ros::Timer odom_timer = 
-        n->createTimer(ros::Duration(1.0/segway_odom_rate), odometryCallback);
-    
-    // Setup Motor Timeout
-    n->param("segway_motor_timeout", segway_motor_timeout, 0.5);
-    
-    // Get frame id parameter
-    n->param("frame_id", frame_id, std::string("base_link"));
-    
-    // Setup the Segway Status Publisher
-    segway_status_pub = 
-        n->advertise<segway_rmp200::SegwayStatus>("segway_status", 1000);
-    
-    // Setup the Odometry Publisher
-    odom_pub = n->advertise<nav_msgs::Odometry>("odom", 50);
-    
-    // Setup the TF broadcaster
-    odom_broadcaster = new tf::TransformBroadcaster;
-    
-    // Get cmd_vel inversion parameters
-    n->param("invert_x", invert_x, false);
-    n->param("invert_z", invert_z, false);
-    
-    ros::spin();
-    
-    ROS_INFO("Shutting Down Segway Interface.");
-    segway->stop();
-    delete ((ros::Timer)motor_timeout_timer);
-    // segway->close(); // This seems to hang the program on exit...
+    segwayrmp_node.run();
     
     return 0;
 }

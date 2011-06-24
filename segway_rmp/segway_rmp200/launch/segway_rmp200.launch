@@ -1,0 +1,37 @@
+<launch>
+    <node name="segway_rmp200" pkg="segway_rmp200" type="segway_rmp200" output="screen" required="true">
+        <!-- If you want to do Serial -->
+        <!-- <param name="interface_type" value="serial" /> -->
+        <!-- <param name="serial_port" value="/dev/ttyUSB0" /> -->
+        
+        <!-- If you want to do USB -->
+        <param name="interface_type" value="usb" />
+        
+            <!-- Select USB by index -->
+            <param name="usb_selector" value="index" />
+            <param name="usb_index" value="0" />
+            
+            <!-- Select USB by Serial Number -->
+            <!-- <param name="usb_selector" value="serial_number" /> -->
+            <!-- <param name="usb_serial_number" value="00000056" /> -->
+            
+            <!-- Select USB by Description -->
+            <!-- <param name="usb_selector" value="description" /> -->
+            <!-- <param name="usb_description" value="Robotic Mobile Platform" /> -->
+        
+        <!-- If a cmd_vel is not received every segway_motor_timeout seconds, the Segway will stop -->
+        <param name="segway_motor_timeout" value="1.0" />
+        
+        <!-- This is the frame_id of the odometry -->
+        <param name="frame_id" value="base_link" />
+        
+        <!-- This will invert linear velocity commands -->
+        <param name="invert_x" value="false" />
+        
+        <!-- This will invert linear velocity commands -->
+        <param name="invert_z" value="false" />
+        
+        <!-- Enabled/Disable TF broadcasting -->
+        <param name="broadcast_tf" value="true" />
+    </node>
+</launch>

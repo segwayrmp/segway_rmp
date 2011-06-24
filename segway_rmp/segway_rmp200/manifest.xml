@@ -12,9 +12,7 @@
   <depend package="tf"/>
   <depend package="geometry_msgs"/>
   <depend package="nav_msgs"/>
-  <depend package="iriutils"/>
-  <depend package="iricomms"/>
-  <depend package="iri_segway_rmp200"/>
+  <depend package="libsegwayrmp"/>
 
 </package>
 
