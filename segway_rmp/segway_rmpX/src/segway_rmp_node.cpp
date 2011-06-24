@@ -31,7 +31,7 @@
 #include <tf/transform_broadcaster.h>
 #include "geometry_msgs/Twist.h"
 #include "nav_msgs/Odometry.h"
-#include "segway_rmp200/SegwayStatusStamped.h"
+#include "segway_rmpX/SegwayStatusStamped.h"
 
 #include "segwayrmp.h"
 
@@ -269,7 +269,7 @@ private:
         // Subscribe to command velocities
         this->cmd_velSubscriber = n->subscribe("cmd_vel", 1000, &SegwayRMPNode::cmd_velCallback, this);
         // Advertise the SegwayStatusStamped
-        this->segway_status_pub = n->advertise<segway_rmp200::SegwayStatusStamped>("segway_status", 1000);
+        this->segway_status_pub = n->advertise<segway_rmpX::SegwayStatusStamped>("segway_status", 1000);
         // Advertise the Odometry Msg
         this->odom_pub = n->advertise<nav_msgs::Odometry>("odom", 50);
     }
@@ -403,7 +403,7 @@ private:
     
     bool connected;
     
-    segway_rmp200::SegwayStatusStamped sss_msg;
+    segway_rmpX::SegwayStatusStamped sss_msg;
     geometry_msgs::TransformStamped odom_trans;
     nav_msgs::Odometry odom_msg;
     
@@ -426,7 +426,7 @@ void handleStatusWrapper(segwayrmp::SegwayStatus &ss) {
 }
 
 int main(int argc, char **argv) {
-    ros::init(argc, argv, "segway_rmp200");
+    ros::init(argc, argv, "segway_rmp_node");
     
     SegwayRMPNode segwayrmp_node;
     
