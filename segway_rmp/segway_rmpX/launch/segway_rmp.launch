@@ -20,16 +20,16 @@
             <!-- <param name="usb_description" value="Robotic Mobile Platform" /> -->
         
         <!-- If a cmd_vel is not received every segway_motor_timeout seconds, the Segway will stop -->
-        <param name="segway_motor_timeout" value="1.0" />
+        <param name="motor_timeout" value="1.0" />
         
         <!-- This is the frame_id of the odometry -->
         <param name="frame_id" value="base_link" />
         
         <!-- This will invert linear velocity commands -->
-        <param name="invert_x" value="false" />
+        <param name="invert_linear_vel_cmds" value="false" />
         
         <!-- This will invert linear velocity commands -->
-        <param name="invert_z" value="false" />
+        <param name="invert_angular_vel_cmds" value="false" />
         
         <!-- Enabled/Disable TF broadcasting -->
         <param name="broadcast_tf" value="true" />

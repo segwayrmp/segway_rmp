@@ -340,7 +340,7 @@ private:
             return 1;
         }
         // Get Setup Motor Timeout
-        n->param("segway_motor_timeout", this->segway_motor_timeout, 0.5);
+        n->param("motor_timeout", this->segway_motor_timeout, 0.5);
         // Get frame id parameter
         n->param("frame_id", frame_id, std::string("base_link"));
         this->sss_msg.header.frame_id = this->frame_id;
@@ -349,8 +349,8 @@ private:
         this->odom_msg.header.frame_id = "odom";
         this->odom_msg.child_frame_id = this->frame_id;
         // Get cmd_vel inversion parameters
-        n->param("invert_x", invert_x, false);
-        n->param("invert_z", invert_z, false);
+        n->param("invert_linear_vel_cmds", invert_x, false);
+        n->param("invert_angular_vel_cmds", invert_z, false);
         // Get option for enable/disable tf broadcasting
         n->param("broadcast_tf", this->broadcast_tf, true);
         // Get the segway rmp type
