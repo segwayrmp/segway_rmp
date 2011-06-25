@@ -9,7 +9,7 @@
   <review status="unreviewed" notes=""/>
   <url>http://ros.org/wiki/segway_rmp200_demos</url>
   <depend package="segway_rmpX"/>
-  <depend package="joy2twist"/>
+  <depend package="joy2twist_segway_rmp"/>
 
 </package>
 
