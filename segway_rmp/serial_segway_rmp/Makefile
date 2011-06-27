@@ -6,8 +6,8 @@ include $(shell rospack find mk)/git_checkout.mk
 
 CMAKE = cmake 
 CMAKE_ARGS = -D CMAKE_BUILD_TYPE=DEBUG \
-			 -D CMAKE_INSTALL_PREFIX="$(shell rospack find serial)/" \
-			 -D CMAKE_FIND_INSTALL_PATH="$(shell rospack find serial)/"
+			 -D CMAKE_INSTALL_PREFIX="$(shell rospack find serial_segway_rmp)/" \
+			 -D CMAKE_FIND_INSTALL_PATH="$(shell rospack find serial_segway_rmp)/"
 
 installed: $(GIT_DIR)
 	mkdir -p lib include Modules

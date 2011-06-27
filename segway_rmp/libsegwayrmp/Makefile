@@ -9,11 +9,11 @@ CMAKE_ARGS = -D CMAKE_BUILD_TYPE=DEBUG \
 			 -D CMAKE_INSTALL_PREFIX="$(shell rospack find libsegwayrmp)/" \
 			 -D CMAKE_FIND_INSTALL_PATH="$(shell rospack find libsegwayrmp)/" \
 			 -D serial_FOUND=TRUE \
-			 -D serial_INCLUDE_DIRS="$(shell rospack find serial)/include/"
+			 -D serial_INCLUDE_DIRS="$(shell rospack find serial_segway_rmp)/include/"
 ifeq ($(UNAME), Darwin)
-	CMAKE_ARGS += -D serial_LIBRARIES="$(shell rospack find serial)/lib/libserial.dylib"
+	CMAKE_ARGS += -D serial_LIBRARIES="$(shell rospack find serial_segway_rmp)/lib/libserial.dylib"
 else
-	CMAKE_ARGS += -D serial_LIBRARIES="$(shell rospack find serial)/lib/libserial.a"
+	CMAKE_ARGS += -D serial_LIBRARIES="$(shell rospack find serial_segway_rmp)/lib/libserial.a"
 endif
 
 installed: $(GIT_DIR)
