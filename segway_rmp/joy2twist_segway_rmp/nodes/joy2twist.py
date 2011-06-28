@@ -39,7 +39,7 @@ __author__ = "William Woodall"
 ###  Imports  ###
 
 # ROS imports
-import roslib; roslib.load_manifest('joy2twist')
+import roslib; roslib.load_manifest('joy2twist_segway_rmp')
 import rospy
 
 # ROS msg and srv imports
