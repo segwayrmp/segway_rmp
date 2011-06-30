@@ -64,8 +64,9 @@ class Joy2Twist(object):
         rospy.init_node("Joy2Twist")
         
         # Get the linear scalar and angular scalar parameter
-        LINEAR_SCALAR = rospy.get_param('linear_scalar', 0.2)
-        ANGULAR_SCALAR = rospy.get_param('angular_scalar', 0.05)
+        LINEAR_SCALAR = rospy.get_param('~max_linear_vel', 0.2)
+        ANGULAR_SCALAR = rospy.get_param('~max_angular_vel', 0.05)
+        rospy.loginfo("Using max_linear_vel: %f and max_angular_vel: %f" % (LINEAR_SCALAR, ANGULAR_SCALAR))
         
         # Setup the Joy topic subscription
         self.joy_subscriber = rospy.Subscriber("joy", Joy, self.handleJoyMessage, queue_size=1)
@@ -80,10 +81,16 @@ class Joy2Twist(object):
         """Handles incoming Joy messages"""
         global LINEAR_SCALAR, ANGULAR_SCALAR
         msg = Twist()
+        trigger_val = data.axes[2]
+        trigger_val += 1
+        trigger_val /= 2
+        trigger_val = 1 - trigger_val
 #        msg.linear.x = data.axes[1] * LINEAR_SCALAR
 #        msg.angular.z = data.axes[0] * ANGULAR_SCALAR
-        msg.linear.x = data.axes[1] * LINEAR_SCALAR * (1 + ((1 - (1 + data.axes[2])/2.0)*5))
-        msg.angular.z = data.axes[0] * ANGULAR_SCALAR * (1 + ((1 - (1 + data.axes[2])/2.0)*3))
+#        msg.linear.x = data.axes[1] * LINEAR_SCALAR * (1 + ((1 - (1 + data.axes[2])/2.0)*5))
+#        msg.angular.z = data.axes[0] * ANGULAR_SCALAR * (1 + ((1 - (1 + data.axes[2])/2.0)*3))
+        msg.linear.x = data.axes[1] * (LINEAR_SCALAR/4.0 + trigger_val*(LINEAR_SCALAR*3.0/4.0))
+        msg.angular.z = data.axes[0] * (ANGULAR_SCALAR/4.0 + trigger_val*(ANGULAR_SCALAR*3.0/4.0))
         self.twist_publisher.publish(msg)
     
 
