@@ -14,7 +14,7 @@
   
   <export>
     <cpp cflags="-I${prefix}/include" lflags="-L${prefix}/lib -Wl,-rpath,${prefix}/lib -llibsegwayrmp.a -lftd2xx"/>
-    <cpp os="osx" cflags="-I${prefix}/include" lflags="-L${prefix}/lib -Wl,-rpath,${prefix}/lib -llibsegwayrmp.dylib -lftd2xx -lboost_system"/>
+    <cpp os="osx" cflags="-I${prefix}/include" lflags="-L${prefix}/lib -Wl,-rpath,${prefix}/lib -llibsegwayrmp.dylib -lftd2xx"/>
   </export>
 
 </package>
