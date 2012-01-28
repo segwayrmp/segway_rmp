@@ -55,7 +55,6 @@ public:
     SegwayRMPNode() {
         n = new ros::NodeHandle("~");
         this->segway_rmp = NULL;
-        this->target_linear_vel = 0.0;
         this->first_odometry = false;
         this->last_forward_displacement = 0.0;
         this->last_yaw_displacement = 0.0;
@@ -239,7 +238,7 @@ public:
     
     void motor_timeoutCallback(const ros::TimerEvent& e) {
         boost::mutex::scoped_lock lock(m_mutex);
-        this->target_linear_vel = 0.0;
+        this->linear_vel = 0.0;
         this->angular_vel = 0.0;
     }
     
@@ -397,7 +396,6 @@ private:
     bool invert_x, invert_z;
     bool broadcast_tf;
     
-    double target_linear_vel;
     double linear_vel;
     double angular_vel;
     
