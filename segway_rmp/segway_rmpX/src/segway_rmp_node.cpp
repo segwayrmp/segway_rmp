@@ -121,9 +121,54 @@ public:
         }
     }
     
+    /**
+     * This method is called at 20Hz.  Each time it sends a movement
+     * command to the Segway RMP.
+     */
     void keepAliveCallback(const ros::TimerEvent& e) {
         if (ros::ok()) {
             boost::mutex::scoped_lock lock(this->m_mutex);
+
+            // Update the linear velocity based on the linear acceleration limits
+            if (this->linear_vel < this->target_linear_vel) {
+                // Must increase linear speed
+                if (this->linear_pos_accel_limit == 0.0 
+                    || this->target_linear_vel - this->linear_vel < this->linear_pos_accel_limit)
+                    this->linear_vel = this->target_linear_vel;
+                else
+                     this->linear_vel += this->linear_pos_accel_limit; 
+            } else if (this->linear_vel > this->target_linear_vel) {
+                // Must decrease linear speed
+                if (this->linear_neg_accel_limit == 0.0 
+                    || this->linear_vel - this->target_linear_vel < this->linear_neg_accel_limit)
+                    this->linear_vel = this->target_linear_vel;
+                else
+                     this->linear_vel -= this->linear_neg_accel_limit; 
+            }
+
+            // Update the angular velocity based on the angular acceleration limits
+            if (this->angular_vel < this->target_angular_vel) {
+                // Must increase angular speed
+                if (this->angular_pos_accel_limit == 0.0
+                    || this->target_angular_vel - this->angular_vel < this->angular_pos_accel_limit)
+                    this->angular_vel = this->target_angular_vel;
+                else
+                     this->angular_vel += this->angular_pos_accel_limit; 
+            } else if (this->angular_vel > this->target_angular_vel) {
+                // Must decrease angular speed
+                if (this->angular_neg_accel_limit == 0.0 
+                    || this->angular_vel - this->target_angular_vel < this->angular_neg_accel_limit)
+                    this->angular_vel = this->target_angular_vel;
+                else
+                     this->angular_vel -= this->angular_neg_accel_limit; 
+            }
+
+            //ROS_INFO("Sending move command: linear velocity = %f, angular velocity = %f", 
+            //    this->linear_vel, this->angular_vel);
+
+            //if (this->linear_vel == 0 || this->angular_vel == 0) {
+            //    ROS_INFO("Sending Segway Command: l=%f a=%f", this->linear_vel, this->angular_vel);
+            //}
             try {
                 this->segway_rmp->move(this->linear_vel, this->angular_vel);
             } catch (std::exception& e) {
@@ -236,12 +281,21 @@ public:
         this->odom_pub.publish(this->odom_msg);
     }
     
+    /**
+     * This method is called if a motor command is not received
+     * within the segway_motor_timeout interval.  It halts the
+     * robot for safety reasons.
+     */
     void motor_timeoutCallback(const ros::TimerEvent& e) {
         boost::mutex::scoped_lock lock(m_mutex);
-        this->linear_vel = 0.0;
-        this->angular_vel = 0.0;
+        //ROS_INFO("Motor command timeout!  Setting target linear and angular velocities to be zero.");
+        this->target_linear_vel = 0.0;
+        this->target_angular_vel = 0.0;
     }
     
+    /**
+     * The handler for messages received on the 'cmd_vel' topic.
+     */
     void cmd_velCallback(const geometry_msgs::Twist::ConstPtr& msg) {
         if (!this->connected)
             return;
@@ -253,8 +307,12 @@ public:
         if (this->invert_z) {
             z *= -1;
         }
-        this->linear_vel = x;
-        this->angular_vel = z * radians_to_degrees; // Convert to degrees
+        this->target_linear_vel = x;
+        this->target_angular_vel = z * radians_to_degrees; // Convert to degrees
+
+        //ROS_INFO("Received motor command linear vel = %f, angular vel = %f.",
+        //    this->target_linear_vel, this->target_angular_vel);
+
         this->motor_timeout_timer = 
             this->n->createTimer(
                 ros::Duration(this->segway_motor_timeout),
@@ -365,6 +423,51 @@ private:
                 segway_rmp_type_str.c_str());
             return 1;
         }
+
+        // Get the linear acceleration limits in m/s^2.  Zero means infinite.
+        n->param("linear_pos_accel_limit", this->linear_pos_accel_limit, 0.0);
+	n->param("linear_neg_accel_limit", this->linear_neg_accel_limit, 0.0);
+
+        // Get the angular acceleration limits in deg/s^2.  Zero means infinite.
+	n->param("angular_pos_accel_limit", this->angular_pos_accel_limit, 0.0);
+	n->param("angular_neg_accel_limit", this->angular_neg_accel_limit, 0.0);
+        
+        // Check for valid acceleration limits
+        if (this->linear_pos_accel_limit < 0) {
+            ROS_ERROR("Invalid linear positive acceleration limit of %f (must be non-negative).",
+                this->linear_pos_accel_limit);
+            return 1;
+        }
+        if (this->linear_neg_accel_limit < 0) {
+            ROS_ERROR("Invalid linear negative acceleration limit of %f (must be non-negative).",
+                this->linear_neg_accel_limit);
+            return 1;
+        }
+        if (this->angular_pos_accel_limit < 0) {
+            ROS_ERROR("Invalid angular positive acceleration limit of %f (must be non-negative).",
+                this->angular_pos_accel_limit);
+            return 1;
+        }
+        if (this->angular_neg_accel_limit < 0) {
+            ROS_ERROR("Invalid angular negative acceleration limit of %f (must be non-negative).",
+                this->angular_neg_accel_limit);
+            return 1;
+        }
+
+        ROS_INFO("Accel limits: linear: pos = %f, neg = %f, angular: pos = %f, neg = %f.",
+            this->linear_pos_accel_limit, this->linear_neg_accel_limit, 
+            this->angular_pos_accel_limit, this->angular_neg_accel_limit);
+        
+        // Convert the linear acceleration limits to have units of (m/s^2)/20 since
+        // the movement commands are sent to the Segway at 20Hz.
+        this->linear_pos_accel_limit /= 20;
+        this->linear_neg_accel_limit /= 20;
+
+        // Convert the angular acceleration limits to have units of (deg/s^2)/20 since
+        // the movement commands are sent to the Segway at 20Hz.
+        this->angular_pos_accel_limit /= 20;
+        this->angular_neg_accel_limit /= 20;
+    
         return 0;
     }
     
@@ -397,7 +500,15 @@ private:
     bool broadcast_tf;
     
     double linear_vel;
-    double angular_vel;
+    double angular_vel; // The angular velocity in deg/s
+
+    double target_linear_vel;  // The ideal linear velocity in m/s
+    double target_angular_vel; // The ideal angular velocity in deg/s
+
+    double linear_pos_accel_limit;  // The max linear acceleration in (m/s^2)/20
+    double linear_neg_accel_limit;  // The max linear deceleration in (m/s^2)/20
+    double angular_pos_accel_limit; // The max angular acceleration in (deg/s^2)/20
+    double angular_neg_accel_limit; // The max angular deceleration in (deg/s^2)/20
     
     bool connected;
     
