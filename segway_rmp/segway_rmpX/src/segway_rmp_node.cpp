@@ -163,8 +163,8 @@ public:
                      this->angular_vel -= this->angular_neg_accel_limit; 
             }
 
-            //ROS_INFO("Sending move command: linear velocity = %f, angular velocity = %f", 
-            //    this->linear_vel, this->angular_vel);
+            ROS_DEBUG("Sending move command: linear velocity = %f, angular velocity = %f", 
+               this->linear_vel, this->angular_vel);
 
             //if (this->linear_vel == 0 || this->angular_vel == 0) {
             //    ROS_INFO("Sending Segway Command: l=%f a=%f", this->linear_vel, this->angular_vel);

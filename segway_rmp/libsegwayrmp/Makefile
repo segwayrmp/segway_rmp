@@ -16,6 +16,10 @@ else
 	CMAKE_ARGS += -D serial_LIBRARIES="$(shell rospack find serial_segway_rmp)/lib/libserial.a"
 endif
 
+CMAKE_ARGS += -D FTD2XX_FOUND=TRUE \
+							-D FTD2XX_INCLUDE_DIR="$(shell rospack find libftd2xx)/include/" \
+							-D FTD2XX_LIBRARIES="$(shell rospack find libftd2xx)/lib/libftd2xx.so" 
+
 installed: $(GIT_DIR)
 	mkdir -p lib include Modules
 	mkdir -p $(GIT_DIR)/build

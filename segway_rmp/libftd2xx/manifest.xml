@@ -1,0 +1,18 @@
+<package>
+  <description brief="libftd2xx">
+
+     libftd2xx
+
+  </description>
+  <author>Piyush Khandelwal</author>
+  <license>BSD</license>
+  <review status="unreviewed" notes=""/>
+  <url>http://ros.org/wiki/libftd2xx</url>
+
+  <export>
+    <cpp cflags="-I${prefix}/include" lflags="-L${prefix}/lib -Wl,-rpath,${prefix}/lib -lftd2xx"/>
+  </export>
+
+</package>
+
+
