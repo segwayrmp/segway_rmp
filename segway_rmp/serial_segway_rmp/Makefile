@@ -2,6 +2,7 @@ all: installed
 
 GIT_DIR = build/serial-git
 GIT_URL = git://github.com/wjwwood/serial.git
+GIT_REVISION = v0.1
 include $(shell rospack find mk)/git_checkout.mk
 
 CMAKE = cmake 
