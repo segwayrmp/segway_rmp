@@ -25,15 +25,15 @@
 #include <sstream>
 #include <cmath>
 
-#include <boost/thread.hpp>
-
 #include "ros/ros.h"
 #include <tf/transform_broadcaster.h>
 #include "geometry_msgs/Twist.h"
 #include "nav_msgs/Odometry.h"
 #include "segway_rmpX/SegwayStatusStamped.h"
 
-#include "segwayrmp.h"
+#include "segwayrmp/segwayrmp.h"
+
+#include <boost/thread.hpp>
 
 class SegwayRMPNode;
 
@@ -47,7 +47,7 @@ void handleDebugMessages(const std::string &msg) {ROS_DEBUG("%s",msg.c_str());}
 void handleInfoMessages(const std::string &msg) {ROS_INFO("%s",msg.c_str());}
 void handleErrorMessages(const std::string &msg) {ROS_ERROR("%s",msg.c_str());}
 
-void handleStatusWrapper(segwayrmp::SegwayStatus &ss);
+void handleStatusWrapper(segwayrmp::SegwayStatus::Ptr &ss);
 
 // ROS Node class
 class SegwayRMPNode {
@@ -180,7 +180,7 @@ public:
         }
     }
     
-    void handleStatus(segwayrmp::SegwayStatus &ss) {
+    void handleStatus(segwayrmp::SegwayStatus::Ptr &ss_ptr) {
         if (!this->connected)
             return;
         // Get the time
@@ -188,6 +188,8 @@ public:
         
         this->sss_msg.header.stamp = current_time;
         
+        segwayrmp::SegwayStatus &ss = *(ss_ptr);
+
         this->sss_msg.segway.pitch_angle = ss.pitch * degrees_to_radians;
         this->sss_msg.segway.pitch_rate = ss.pitch_rate * degrees_to_radians;
         this->sss_msg.segway.roll_angle = ss.roll * degrees_to_radians;
@@ -360,9 +362,9 @@ private:
         
         // Set callbacks for segway data and messages
         this->segway_rmp->setStatusCallback(handleStatusWrapper);
-        this->segway_rmp->setDebugMsgCallback(handleDebugMessages);
-        this->segway_rmp->setInfoMsgCallback(handleInfoMessages);
-        this->segway_rmp->setErrorMsgCallback(handleErrorMessages);
+        this->segway_rmp->setLogMsgCallback("debug", handleDebugMessages);
+        this->segway_rmp->setLogMsgCallback("info", handleInfoMessages);
+        this->segway_rmp->setLogMsgCallback("error", handleErrorMessages);
     }
     
     int getParameters() {
@@ -426,11 +428,11 @@ private:
 
         // Get the linear acceleration limits in m/s^2.  Zero means infinite.
         n->param("linear_pos_accel_limit", this->linear_pos_accel_limit, 0.0);
-	n->param("linear_neg_accel_limit", this->linear_neg_accel_limit, 0.0);
+        n->param("linear_neg_accel_limit", this->linear_neg_accel_limit, 0.0);
 
         // Get the angular acceleration limits in deg/s^2.  Zero means infinite.
-	n->param("angular_pos_accel_limit", this->angular_pos_accel_limit, 0.0);
-	n->param("angular_neg_accel_limit", this->angular_neg_accel_limit, 0.0);
+        n->param("angular_pos_accel_limit", this->angular_pos_accel_limit, 0.0);
+        n->param("angular_neg_accel_limit", this->angular_neg_accel_limit, 0.0);
         
         // Check for valid acceleration limits
         if (this->linear_pos_accel_limit < 0) {
@@ -530,7 +532,7 @@ private:
 };
 
 // Callback wrapper
-void handleStatusWrapper(segwayrmp::SegwayStatus &ss) {
+void handleStatusWrapper(segwayrmp::SegwayStatus::Ptr &ss) {
     segwayrmp_node_instance->handleStatus(ss);
 }
 
