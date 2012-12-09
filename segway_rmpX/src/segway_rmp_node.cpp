@@ -215,8 +215,10 @@ public:
         // TODO: possibly spin this off in another thread
         
         // Grab the newest Segway data
-        float forward_displacement = ss.integrated_forward_position;
-        float yaw_displacement = ss.integrated_turn_position * degrees_to_radians;
+        float forward_displacement = 
+            ss.integrated_forward_position * this->linear_odom_scale;
+        float yaw_displacement = 
+            ss.integrated_turn_position * degrees_to_radians * this->angular_odom_scale;
         float yaw_rate = ss.yaw_rate * degrees_to_radians;
         
         // Integrate the displacements over time
@@ -469,6 +471,10 @@ private:
         // the movement commands are sent to the Segway at 20Hz.
         this->angular_pos_accel_limit /= 20;
         this->angular_neg_accel_limit /= 20;
+
+        // Get the scale correction parameters for odometry
+        n->param("linear_odom_scale", this->linear_odom_scale, 1.0);
+        n->param("angular_odom_scale", this->angular_odom_scale, 1.0);
     
         return 0;
     }
@@ -511,6 +517,9 @@ private:
     double linear_neg_accel_limit;  // The max linear deceleration in (m/s^2)/20
     double angular_pos_accel_limit; // The max angular acceleration in (deg/s^2)/20
     double angular_neg_accel_limit; // The max angular deceleration in (deg/s^2)/20
+
+    double linear_odom_scale;       // linear odometry scale correction 
+    double angular_odom_scale;      // angular odometry scale correction
     
     bool connected;
     
