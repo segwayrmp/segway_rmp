@@ -236,14 +236,14 @@ public:
             // Update accumulated odometries and calculate the x and y components 
             // of velocity
             this->odometry_w = yaw_displacement;
-            float new_odometry_x = 
+            float delta_odometry_x = 
                 delta_forward_displacement * std::cos(this->odometry_w);
-            vel_x = (new_odometry_x - this->odometry_x)/delta_time;
-            this->odometry_x += new_odometry_x;
-            float new_odometry_y = 
+            vel_x = delta_odometry_x / delta_time;
+            this->odometry_x += delta_odometry_x;
+            float delta_odometry_y = 
                 delta_forward_displacement * std::sin(this->odometry_w);
-            vel_y = (new_odometry_y - this->odometry_y)/delta_time;
-            this->odometry_y += new_odometry_y;
+            vel_y = delta_odometry_y / delta_time;
+            this->odometry_y += delta_odometry_y;
         } else {
             this->first_odometry = false;
         }
