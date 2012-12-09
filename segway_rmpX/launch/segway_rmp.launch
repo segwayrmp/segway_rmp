@@ -20,7 +20,7 @@
             <!-- <param name="usb_description" type="str" value="Robotic Mobile Platform" /> -->
         
         <!-- If a cmd_vel is not received every segway_motor_timeout seconds, the Segway will stop -->
-        <param name="motor_timeout" type="float" value="1.0" />
+        <param name="motor_timeout" type="double" value="1.0" />
         
         <!-- This is the frame_id of the odometry -->
         <param name="frame_id" type="str" value="base_link" />
@@ -40,5 +40,16 @@
         
         <!-- Commonly you need to remap to just /cmd_vel from /<node_name>/cmd_vel -->
         <remap from="~cmd_vel" to="/cmd_vel" />
+
+        <!-- Set linear and angular acceleration limits in m/s^2 and degree/s^2 respectively -->
+        <!-- <param name="linear_pos_accel_limit" type="double" value="1.0" /> -->
+        <!-- <param name="linear_neg_accel_limit" type="double" value="1.0" /> -->
+        <!-- <param name="angular_pos_accel_limit" type="double" value="45.0" /> -->
+        <!-- <param name="angular_neg_accel_limit" type="double" value="45.0" /> -->
+
+        <!-- linear scaling parameters for odometry. Use 2.0 for RMP 50 -->
+        <!-- <param name="linear_odom_scale" type="double" value="1.0" /> -->
+        <!-- <param name="angular_odom_scale" type="double" value="1.0" /> -->
+
     </node>
 </launch>
