@@ -55,7 +55,7 @@ public:
     SegwayRMPNode() {
         n = new ros::NodeHandle("~");
         this->segway_rmp = NULL;
-        this->first_odometry = false;
+        this->first_odometry = true;
         this->last_forward_displacement = 0.0;
         this->last_yaw_displacement = 0.0;
         this->odometry_x = 0.0;
