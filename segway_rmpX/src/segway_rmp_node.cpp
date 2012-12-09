@@ -61,6 +61,10 @@ public:
         this->odometry_x = 0.0;
         this->odometry_y = 0.0;
         this->odometry_w = 0.0;
+        this->linear_vel = 0.0;
+        this->angular_vel = 0.0;
+        this->target_linear_vel = 0.0;
+        this->target_angular_vel = 0.0;
         this->count = 0;
     }
     
