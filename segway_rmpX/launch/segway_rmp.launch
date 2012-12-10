@@ -47,6 +47,10 @@
         <!-- <param name="angular_pos_accel_limit" type="double" value="45.0" /> -->
         <!-- <param name="angular_neg_accel_limit" type="double" value="45.0" /> -->
 
+        <!-- velocity limits -->
+        <!-- <param name="max_linear_vel" type="double" value="0.75" /> -->
+        <!-- <param name="max_angular_vel" type="double" value="0.5" /> -->
+
         <!-- linear scaling parameters for odometry. Use 2.0 for RMP 50 -->
         <!-- <param name="linear_odom_scale" type="double" value="1.0" /> -->
         <!-- <param name="angular_odom_scale" type="double" value="1.0" /> -->

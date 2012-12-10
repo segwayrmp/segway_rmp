@@ -358,6 +358,16 @@ public:
         if (this->invert_z) {
             z *= -1;
         }
+        if (this->max_linear_vel != 0.0) {
+          if (abs(x) > this->max_linear_vel) {
+            x = (x > 0) ? this->max_linear_vel : -this->max_linear_vel;
+          }
+        }
+        if (this->max_angular_vel != 0.0) {
+          if (abs(z) > this->max_angular_vel) {
+            z = (z > 0) ? this->max_angular_vel : -this->max_angular_vel;
+          }
+        }
         this->target_linear_vel = x;
         this->target_angular_vel = z * radians_to_degrees; // Convert to degrees
 
@@ -508,6 +518,25 @@ private:
         ROS_INFO("Accel limits: linear: pos = %f, neg = %f, angular: pos = %f, neg = %f.",
             this->linear_pos_accel_limit, this->linear_neg_accel_limit, 
             this->angular_pos_accel_limit, this->angular_neg_accel_limit);
+
+        // Get velocity limits. Zero means no limit
+        n->param("max_linear_vel", this->max_linear_vel, 0.0);
+        n->param("max_angular_vel", this->max_angular_vel, 0.0);
+        
+        if (this->max_linear_vel < 0) {
+            ROS_ERROR("Invalid max linear velocity limit of %f (must be non-negative).",
+                this->max_linear_vel);
+            return 1;
+        }
+ 
+        if (this->max_angular_vel < 0) {
+            ROS_ERROR("Invalid max angular velocity limit of %f (must be non-negative).",
+                this->max_angular_vel);
+            return 1;
+        }
+
+        ROS_INFO("Velocity limits: linear: %f, angular: %f.",
+            this->max_linear_vel, this->max_angular_vel); 
         
         // Convert the linear acceleration limits to have units of (m/s^2)/20 since
         // the movement commands are sent to the Segway at 20Hz.
@@ -571,6 +600,9 @@ private:
 
     double linear_odom_scale;       // linear odometry scale correction 
     double angular_odom_scale;      // angular odometry scale correction
+
+    double max_linear_vel;  // maximum allowed magnitude of velocity
+    double max_angular_vel;
     
     bool connected;
     
