@@ -51,5 +51,9 @@
         <!-- <param name="linear_odom_scale" type="double" value="1.0" /> -->
         <!-- <param name="angular_odom_scale" type="double" value="1.0" /> -->
 
+        <!-- software odometry reset (used when integrator reset in h/w fails) -->
+        <!-- <param name="reset_odometry" value="true" /> -->
+        <!-- <param name="odometry_reset_duration" value="1.0" /> -->
+
     </node>
 </launch>

@@ -65,6 +65,10 @@ public:
         this->angular_vel = 0.0;
         this->target_linear_vel = 0.0;
         this->target_angular_vel = 0.0;
+        this->initial_integrated_forward_position = 0.0;
+        this->initial_integrated_left_wheel_position = 0.0;
+        this->initial_integrated_right_wheel_position = 0.0;
+        this->initial_integrated_turn_position = 0.0;
         this->count = 0;
     }
     
@@ -93,6 +97,8 @@ public:
         ros::AsyncSpinner spinner(1);
         spinner.start();
         
+	this->odometry_reset_start_time = ros::Time::now();
+
         this->connected = false;
         while (ros::ok()) {
             try {
@@ -130,6 +136,10 @@ public:
      * command to the Segway RMP.
      */
     void keepAliveCallback(const ros::TimerEvent& e) {
+
+        if (!this->connected || this->reset_odometry)
+          return;
+
         if (ros::ok()) {
             boost::mutex::scoped_lock lock(this->m_mutex);
 
@@ -189,10 +199,37 @@ public:
             return;
         // Get the time
         ros::Time current_time = ros::Time::now();
-        
+
         this->sss_msg.header.stamp = current_time;
         
         segwayrmp::SegwayStatus &ss = *(ss_ptr);
+
+        // Check if an odometry reset is still required
+        if (this->reset_odometry) {
+          if ((current_time - this->odometry_reset_start_time).toSec() < 0.25) {
+            return; // discard readings for the first 0.25 seconds
+          }
+          if (fabs(ss.integrated_forward_position) < 1e-3 &&
+              fabs(ss.integrated_turn_position) < 1e-3 &&
+              fabs(ss.integrated_left_wheel_position) < 1e-3 &&
+              fabs(ss.integrated_right_wheel_position) < 1e-3) {
+            this->initial_integrated_forward_position = ss.integrated_forward_position;
+            this->initial_integrated_left_wheel_position = ss.integrated_left_wheel_position;
+            this->initial_integrated_right_wheel_position = ss.integrated_right_wheel_position;
+            this->initial_integrated_turn_position = ss.integrated_turn_position;
+            ROS_INFO("Integrators reset by Segway RMP successfully");
+            this->reset_odometry = false;
+          } else if ((current_time - this->odometry_reset_start_time).toSec() > this->odometry_reset_duration) {
+            this->initial_integrated_forward_position = ss.integrated_forward_position;
+            this->initial_integrated_left_wheel_position = ss.integrated_left_wheel_position;
+            this->initial_integrated_right_wheel_position = ss.integrated_right_wheel_position;
+            this->initial_integrated_turn_position = ss.integrated_turn_position;
+            ROS_INFO("Integrator reset by Segway RMP failed. Performing software reset"); 
+            this->reset_odometry = false;
+          } else {
+            return; // continue waiting for odometry to be reset
+          }
+        }
 
         this->sss_msg.segway.pitch_angle = ss.pitch * degrees_to_radians;
         this->sss_msg.segway.pitch_rate = ss.pitch_rate * degrees_to_radians;
@@ -202,10 +239,14 @@ public:
         this->sss_msg.segway.right_wheel_velocity = ss.right_wheel_speed;
         this->sss_msg.segway.yaw_rate = ss.yaw_rate * degrees_to_radians;
         this->sss_msg.segway.servo_frames = ss.servo_frames;
-        this->sss_msg.segway.left_wheel_displacement = ss.integrated_left_wheel_position;
-        this->sss_msg.segway.right_wheel_displacement = ss.integrated_right_wheel_position;
-        this->sss_msg.segway.forward_displacement = ss.integrated_forward_position;
-        this->sss_msg.segway.yaw_displacement = ss.integrated_turn_position * degrees_to_radians;
+        this->sss_msg.segway.left_wheel_displacement = 
+            ss.integrated_left_wheel_position - this->initial_integrated_left_wheel_position;
+        this->sss_msg.segway.right_wheel_displacement = 
+            ss.integrated_right_wheel_position - this->initial_integrated_right_wheel_position;
+        this->sss_msg.segway.forward_displacement = 
+            ss.integrated_forward_position - this->initial_integrated_forward_position;
+        this->sss_msg.segway.yaw_displacement = 
+            (ss.integrated_turn_position - this->initial_integrated_turn_position) * degrees_to_radians;
         this->sss_msg.segway.left_motor_torque = ss.left_motor_torque;
         this->sss_msg.segway.right_motor_torque = ss.right_motor_torque;
         this->sss_msg.segway.operation_mode = ss.operational_mode;
@@ -220,9 +261,11 @@ public:
         
         // Grab the newest Segway data
         float forward_displacement = 
-            ss.integrated_forward_position * this->linear_odom_scale;
+            (ss.integrated_forward_position - this->initial_integrated_forward_position) * 
+            this->linear_odom_scale;
         float yaw_displacement = 
-            ss.integrated_turn_position * degrees_to_radians * this->angular_odom_scale;
+            (ss.integrated_turn_position - this->initial_integrated_turn_position) * 
+            degrees_to_radians * this->angular_odom_scale;
         float yaw_rate = ss.yaw_rate * degrees_to_radians;
         
         // Integrate the displacements over time
@@ -479,6 +522,10 @@ private:
         // Get the scale correction parameters for odometry
         n->param("linear_odom_scale", this->linear_odom_scale, 1.0);
         n->param("angular_odom_scale", this->angular_odom_scale, 1.0);
+
+        // Check if a software odometry reset is required
+        n->param("reset_odometry", this->reset_odometry, false);
+        n->param("odometry_reset_duration", this->odometry_reset_duration, 1.0);
     
         return 0;
     }
@@ -542,6 +589,17 @@ private:
     ros::Time last_time;
     
     boost::mutex m_mutex;
+
+    // Hardware reset of integrators can sometimes fail.
+    // These help in performing a software reset.
+    bool reset_odometry;
+    double odometry_reset_duration;
+    ros::Time odometry_reset_start_time;
+    double initial_integrated_forward_position;
+    double initial_integrated_left_wheel_position;
+    double initial_integrated_right_wheel_position;
+    double initial_integrated_turn_position;
+    
 };
 
 // Callback wrapper
