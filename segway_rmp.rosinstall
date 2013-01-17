@@ -1,10 +1,10 @@
 - git:
     local-name: 'segway_rmp'
-    uri: 'https://github.com/wjwwood/segway-rmp-ros-pkg.git'
+    uri: 'https://github.com/segwayrmp/segway-rmp-ros-pkg.git'
     version: 'master'
 - git:
     local-name: 'libsegwayrmp'
-    uri: 'https://github.com/wjwwood/libsegwayrmp.git'
+    uri: 'https://github.com/segwayrmp/libsegwayrmp.git'
     version: 'master'
 - git:
     local-name: 'serial'
