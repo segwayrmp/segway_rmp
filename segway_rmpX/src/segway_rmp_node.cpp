@@ -55,12 +55,20 @@ public:
     SegwayRMPNode() {
         n = new ros::NodeHandle("~");
         this->segway_rmp = NULL;
-        this->first_odometry = false;
+        this->first_odometry = true;
         this->last_forward_displacement = 0.0;
         this->last_yaw_displacement = 0.0;
         this->odometry_x = 0.0;
         this->odometry_y = 0.0;
         this->odometry_w = 0.0;
+        this->linear_vel = 0.0;
+        this->angular_vel = 0.0;
+        this->target_linear_vel = 0.0;
+        this->target_angular_vel = 0.0;
+        this->initial_integrated_forward_position = 0.0;
+        this->initial_integrated_left_wheel_position = 0.0;
+        this->initial_integrated_right_wheel_position = 0.0;
+        this->initial_integrated_turn_position = 0.0;
         this->count = 0;
     }
     
@@ -89,6 +97,8 @@ public:
         ros::AsyncSpinner spinner(1);
         spinner.start();
         
+	this->odometry_reset_start_time = ros::Time::now();
+
         this->connected = false;
         while (ros::ok()) {
             try {
@@ -126,6 +136,10 @@ public:
      * command to the Segway RMP.
      */
     void keepAliveCallback(const ros::TimerEvent& e) {
+
+        if (!this->connected || this->reset_odometry)
+          return;
+
         if (ros::ok()) {
             boost::mutex::scoped_lock lock(this->m_mutex);
 
@@ -185,10 +199,37 @@ public:
             return;
         // Get the time
         ros::Time current_time = ros::Time::now();
-        
+
         this->sss_msg.header.stamp = current_time;
         
         segwayrmp::SegwayStatus &ss = *(ss_ptr);
+
+        // Check if an odometry reset is still required
+        if (this->reset_odometry) {
+          if ((current_time - this->odometry_reset_start_time).toSec() < 0.25) {
+            return; // discard readings for the first 0.25 seconds
+          }
+          if (fabs(ss.integrated_forward_position) < 1e-3 &&
+              fabs(ss.integrated_turn_position) < 1e-3 &&
+              fabs(ss.integrated_left_wheel_position) < 1e-3 &&
+              fabs(ss.integrated_right_wheel_position) < 1e-3) {
+            this->initial_integrated_forward_position = ss.integrated_forward_position;
+            this->initial_integrated_left_wheel_position = ss.integrated_left_wheel_position;
+            this->initial_integrated_right_wheel_position = ss.integrated_right_wheel_position;
+            this->initial_integrated_turn_position = ss.integrated_turn_position;
+            ROS_INFO("Integrators reset by Segway RMP successfully");
+            this->reset_odometry = false;
+          } else if ((current_time - this->odometry_reset_start_time).toSec() > this->odometry_reset_duration) {
+            this->initial_integrated_forward_position = ss.integrated_forward_position;
+            this->initial_integrated_left_wheel_position = ss.integrated_left_wheel_position;
+            this->initial_integrated_right_wheel_position = ss.integrated_right_wheel_position;
+            this->initial_integrated_turn_position = ss.integrated_turn_position;
+            ROS_INFO("Integrator reset by Segway RMP failed. Performing software reset"); 
+            this->reset_odometry = false;
+          } else {
+            return; // continue waiting for odometry to be reset
+          }
+        }
 
         this->sss_msg.segway.pitch_angle = ss.pitch * degrees_to_radians;
         this->sss_msg.segway.pitch_rate = ss.pitch_rate * degrees_to_radians;
@@ -198,10 +239,14 @@ public:
         this->sss_msg.segway.right_wheel_velocity = ss.right_wheel_speed;
         this->sss_msg.segway.yaw_rate = ss.yaw_rate * degrees_to_radians;
         this->sss_msg.segway.servo_frames = ss.servo_frames;
-        this->sss_msg.segway.left_wheel_displacement = ss.integrated_left_wheel_position;
-        this->sss_msg.segway.right_wheel_displacement = ss.integrated_right_wheel_position;
-        this->sss_msg.segway.forward_displacement = ss.integrated_forward_position;
-        this->sss_msg.segway.yaw_displacement = ss.integrated_turn_position * degrees_to_radians;
+        this->sss_msg.segway.left_wheel_displacement = 
+            ss.integrated_left_wheel_position - this->initial_integrated_left_wheel_position;
+        this->sss_msg.segway.right_wheel_displacement = 
+            ss.integrated_right_wheel_position - this->initial_integrated_right_wheel_position;
+        this->sss_msg.segway.forward_displacement = 
+            ss.integrated_forward_position - this->initial_integrated_forward_position;
+        this->sss_msg.segway.yaw_displacement = 
+            (ss.integrated_turn_position - this->initial_integrated_turn_position) * degrees_to_radians;
         this->sss_msg.segway.left_motor_torque = ss.left_motor_torque;
         this->sss_msg.segway.right_motor_torque = ss.right_motor_torque;
         this->sss_msg.segway.operation_mode = ss.operational_mode;
@@ -215,8 +260,12 @@ public:
         // TODO: possibly spin this off in another thread
         
         // Grab the newest Segway data
-        float forward_displacement = ss.integrated_forward_position;
-        float yaw_displacement = ss.integrated_turn_position * degrees_to_radians;
+        float forward_displacement = 
+            (ss.integrated_forward_position - this->initial_integrated_forward_position) * 
+            this->linear_odom_scale;
+        float yaw_displacement = 
+            (ss.integrated_turn_position - this->initial_integrated_turn_position) * 
+            degrees_to_radians * this->angular_odom_scale;
         float yaw_rate = ss.yaw_rate * degrees_to_radians;
         
         // Integrate the displacements over time
@@ -230,14 +279,14 @@ public:
             // Update accumulated odometries and calculate the x and y components 
             // of velocity
             this->odometry_w = yaw_displacement;
-            float new_odometry_x = 
+            float delta_odometry_x = 
                 delta_forward_displacement * std::cos(this->odometry_w);
-            vel_x = (new_odometry_x - this->odometry_x)/delta_time;
-            this->odometry_x += new_odometry_x;
-            float new_odometry_y = 
+            vel_x = delta_odometry_x / delta_time;
+            this->odometry_x += delta_odometry_x;
+            float delta_odometry_y = 
                 delta_forward_displacement * std::sin(this->odometry_w);
-            vel_y = (new_odometry_y - this->odometry_y)/delta_time;
-            this->odometry_y += new_odometry_y;
+            vel_y = delta_odometry_y / delta_time;
+            this->odometry_y += delta_odometry_y;
         } else {
             this->first_odometry = false;
         }
@@ -308,6 +357,16 @@ public:
         }
         if (this->invert_z) {
             z *= -1;
+        }
+        if (this->max_linear_vel != 0.0) {
+          if (abs(x) > this->max_linear_vel) {
+            x = (x > 0) ? this->max_linear_vel : -this->max_linear_vel;
+          }
+        }
+        if (this->max_angular_vel != 0.0) {
+          if (abs(z) > this->max_angular_vel) {
+            z = (z > 0) ? this->max_angular_vel : -this->max_angular_vel;
+          }
         }
         this->target_linear_vel = x;
         this->target_angular_vel = z * radians_to_degrees; // Convert to degrees
@@ -459,6 +518,25 @@ private:
         ROS_INFO("Accel limits: linear: pos = %f, neg = %f, angular: pos = %f, neg = %f.",
             this->linear_pos_accel_limit, this->linear_neg_accel_limit, 
             this->angular_pos_accel_limit, this->angular_neg_accel_limit);
+
+        // Get velocity limits. Zero means no limit
+        n->param("max_linear_vel", this->max_linear_vel, 0.0);
+        n->param("max_angular_vel", this->max_angular_vel, 0.0);
+        
+        if (this->max_linear_vel < 0) {
+            ROS_ERROR("Invalid max linear velocity limit of %f (must be non-negative).",
+                this->max_linear_vel);
+            return 1;
+        }
+ 
+        if (this->max_angular_vel < 0) {
+            ROS_ERROR("Invalid max angular velocity limit of %f (must be non-negative).",
+                this->max_angular_vel);
+            return 1;
+        }
+
+        ROS_INFO("Velocity limits: linear: %f, angular: %f.",
+            this->max_linear_vel, this->max_angular_vel); 
         
         // Convert the linear acceleration limits to have units of (m/s^2)/20 since
         // the movement commands are sent to the Segway at 20Hz.
@@ -469,6 +547,14 @@ private:
         // the movement commands are sent to the Segway at 20Hz.
         this->angular_pos_accel_limit /= 20;
         this->angular_neg_accel_limit /= 20;
+
+        // Get the scale correction parameters for odometry
+        n->param("linear_odom_scale", this->linear_odom_scale, 1.0);
+        n->param("angular_odom_scale", this->angular_odom_scale, 1.0);
+
+        // Check if a software odometry reset is required
+        n->param("reset_odometry", this->reset_odometry, false);
+        n->param("odometry_reset_duration", this->odometry_reset_duration, 1.0);
     
         return 0;
     }
@@ -511,6 +597,12 @@ private:
     double linear_neg_accel_limit;  // The max linear deceleration in (m/s^2)/20
     double angular_pos_accel_limit; // The max angular acceleration in (deg/s^2)/20
     double angular_neg_accel_limit; // The max angular deceleration in (deg/s^2)/20
+
+    double linear_odom_scale;       // linear odometry scale correction 
+    double angular_odom_scale;      // angular odometry scale correction
+
+    double max_linear_vel;  // maximum allowed magnitude of velocity
+    double max_angular_vel;
     
     bool connected;
     
@@ -529,6 +621,17 @@ private:
     ros::Time last_time;
     
     boost::mutex m_mutex;
+
+    // Hardware reset of integrators can sometimes fail.
+    // These help in performing a software reset.
+    bool reset_odometry;
+    double odometry_reset_duration;
+    ros::Time odometry_reset_start_time;
+    double initial_integrated_forward_position;
+    double initial_integrated_left_wheel_position;
+    double initial_integrated_right_wheel_position;
+    double initial_integrated_turn_position;
+    
 };
 
 // Callback wrapper
