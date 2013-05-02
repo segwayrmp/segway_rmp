@@ -1,9 +1,0 @@
-<stack>
-  <description brief="segway_rmp">segway_rmp</description>
-  <author>Maintained by William Woodall</author>
-  <license>BSD</license> 
-  <review status="unreviewed" notes=""/>
-  <url>http://ros.org/wiki/segway_rmp</url>
-  <depend stack="ros" />
-
-</stack>

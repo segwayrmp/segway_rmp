@@ -1,5 +1,5 @@
 <launch>
-    <node name="segway_rmp_node" pkg="segway_rmpX" type="segway_rmp_node" output="screen" required="true">
+    <node name="segway_rmp_node" pkg="segway_rmp" type="segway_rmp_node" output="screen" required="true">
         <!-- If you want to do Serial -->
         <!-- <param name="interface_type" type="str" value="serial" /> -->
         <!-- <param name="serial_port" type="str" value="/dev/ttyUSB0" /> -->
