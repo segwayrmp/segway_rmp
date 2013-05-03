@@ -29,7 +29,7 @@
 #include <tf/transform_broadcaster.h>
 #include "geometry_msgs/Twist.h"
 #include "nav_msgs/Odometry.h"
-#include "segway_rmpX/SegwayStatusStamped.h"
+#include "segway_rmp/SegwayStatusStamped.h"
 
 #include "segwayrmp/segwayrmp.h"
 
@@ -387,7 +387,7 @@ private:
         // Subscribe to command velocities
         this->cmd_velSubscriber = n->subscribe("cmd_vel", 1000, &SegwayRMPNode::cmd_velCallback, this);
         // Advertise the SegwayStatusStamped
-        this->segway_status_pub = n->advertise<segway_rmpX::SegwayStatusStamped>("segway_status", 1000);
+        this->segway_status_pub = n->advertise<segway_rmp::SegwayStatusStamped>("segway_status", 1000);
         // Advertise the Odometry Msg
         this->odom_pub = n->advertise<nav_msgs::Odometry>("odom", 50);
     }
@@ -606,7 +606,7 @@ private:
     
     bool connected;
     
-    segway_rmpX::SegwayStatusStamped sss_msg;
+    segway_rmp::SegwayStatusStamped sss_msg;
     geometry_msgs::TransformStamped odom_trans;
     nav_msgs::Odometry odom_msg;
     
