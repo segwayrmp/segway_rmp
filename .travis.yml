@@ -1,0 +1,20 @@
+language: cpp
+compiler:
+  - gcc
+  - clang
+install:
+  - sudo sh -c 'echo "deb http://packages.ros.org/ros/ubuntu precise main" > /etc/apt/sources.list.d/ros-latest.list'
+  - wget http://packages.ros.org/ros.key -O - | sudo apt-key add -
+  - sudo apt-get update
+  - sudo apt-get install python-rosdep
+  - sudo rosdep init
+  - rosdep update
+  - rosdep install --from-paths ./ --ignore-src --rosdistro groovy -y
+  - source /opt/ros/groovy/setup.bash
+script:
+  - mkdir build
+  - cd build
+  - cmake ..
+  - make
+  - make tests
+  - make run_tests
