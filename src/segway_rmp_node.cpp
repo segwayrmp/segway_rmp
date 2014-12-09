@@ -478,9 +478,11 @@ private:
             this->segway_rmp_type = segwayrmp::rmp200;
         } else if (segway_rmp_type_str == "50/100") {
             this->segway_rmp_type = segwayrmp::rmp100;
+        } else if (segway_rmp_type_str == "50xl") {
+            this->segway_rmp_type = segwayrmp::rmp50XL;
         } else {
             ROS_ERROR(
-                "Invalid rmp type: %s, valid rmp types are '200/400' and '50/100'.",
+                "Invalid rmp type: %s, valid rmp types are '200/400', '50/100', and '50xl'",
                 segway_rmp_type_str.c_str());
             return 1;
         }
