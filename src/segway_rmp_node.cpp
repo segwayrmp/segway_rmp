@@ -461,10 +461,11 @@ private:
         n->param("motor_timeout", this->segway_motor_timeout, 0.5);
         // Get frame id parameter
         n->param("frame_id", frame_id, std::string("base_link"));
+        n->param("odom_frame_id", odom_frame_id, std::string("odom"));
         this->sss_msg.header.frame_id = this->frame_id;
-        this->odom_trans.header.frame_id = "odom";
+        this->odom_trans.header.frame_id = this->odom_frame_id;
         this->odom_trans.child_frame_id = this->frame_id;
-        this->odom_msg.header.frame_id = "odom";
+        this->odom_msg.header.frame_id = this->odom_frame_id;
         this->odom_msg.child_frame_id = this->frame_id;
         // Get cmd_vel inversion parameters
         n->param("invert_linear_vel_cmds", invert_x, false);
@@ -584,6 +585,7 @@ private:
     ros::Timer motor_timeout_timer;
     
     std::string frame_id;
+    std::string odom_frame_id;
     bool invert_x, invert_z;
     bool broadcast_tf;
     
