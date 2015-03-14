@@ -2,8 +2,8 @@
 Changelog for package segway_rmp
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.1.2 (2015-03-14)
+------------------
 * Merge pull request `#24 <https://github.com/segwayrmp/segway_rmp/issues/24>`_ from segwayrmp/piyushk/parametrize_frame_ids
   allow parametrizing odometry frame id as well (useful for multiple robots)
 * Contributors: Piyush Khandelwal
