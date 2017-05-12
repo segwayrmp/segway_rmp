@@ -5,7 +5,6 @@ find_package(catkin REQUIRED
   COMPONENTS
     geometry_msgs
     message_generation
-    message_runtime
     nav_msgs
     roscpp
     serial
@@ -34,6 +33,7 @@ catkin_package(
   DEPENDS libsegwayrmp
   CATKIN_DEPENDS
     geometry_msgs
+    message_runtime
     nav_msgs
     roscpp
     serial
@@ -44,6 +44,8 @@ catkin_package(
 add_executable(segway_rmp_node src/segway_rmp_node.cpp)
 
 message("libsegwayrmp_LIBRARIES: ${libsegwayrmp_LIBRARIES}")
+
+add_dependencies(segway_rmp_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 target_link_libraries(segway_rmp_node
   ${Boost_LIBRARIES}
